@@ -1,6 +1,6 @@
 # files
 from .serializers import RegisterSerializer
-from .models import User
+from django.contrib.auth.models import User
 #
 import logging
 # rest framework
