@@ -5,6 +5,15 @@
   text-align: center;
 }
 
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #1d9bf0, #004080);
+  min-height: 100vh;
+  font-family: system-ui, sans-serif;
+  color: white; /* optional if you want contrast */
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
