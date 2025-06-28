@@ -1,27 +1,46 @@
+
 from .models import AiModel
-from rest_framework import permissions
-from rest_framework import generics
+from rest_framework import permissions, generics
 from .serializers import AiModelSerializer
 import zipfile
+import os
+import shutil
+from django.conf import settings
 import logging
+
 logger = logging.getLogger(__name__)
 
-# Create your views here.
-#def unzip():
-#    with zipfile.ZipFile('../uploads/', 'r') as zip_ref:
-#        zip_ref.extractall('../uploads/unzip/')
 class AiModelUploadView(generics.ListCreateAPIView):
     queryset = AiModel.objects.all()
     serializer_class = AiModelSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # authenticated users can only see their own tasks
     def get_queryset(self):
-        user = self.request.user
-        qs = super().get_queryset()
-        return qs.filter(user=user)
-        
+        return super().get_queryset().filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        instance = serializer.save(user=self.request.user)
+
+        try:
+            # Full path to the uploaded zip file
+            zip_path = instance.model.path
+
+            # Target extraction directory inside uploads/
+            target_dir = os.path.join(os.path.dirname(zip_path))
+            os.makedirs(target_dir, exist_ok=True)
+
+            # Extract zip contents
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(target_dir)
+            
+            # Remove the original .zip file
+            os.remove(zip_path)
+
+
+            logger.info(f"Model unzipped to {target_dir} and original zip removed.")
+
+        except Exception as e:
+            logger.error(f"Unzipping failed: {e}")
+
+
         
