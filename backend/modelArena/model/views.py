@@ -18,29 +18,30 @@ class AiModelUploadView(generics.ListCreateAPIView):
     def get_queryset(self):
         return super().get_queryset().filter(user=self.request.user)
 
-    def perform_create(self, serializer):
-        instance = serializer.save(user=self.request.user)
+    import os
+import zipfile
 
-        try:
-            # Full path to the uploaded zip file
-            zip_path = instance.model.path
+def perform_create(self, serializer):
+    instance = serializer.save(user=self.request.user)
 
-            # Target extraction directory inside uploads/
-            target_dir = os.path.join(os.path.dirname(zip_path))
-            os.makedirs(target_dir, exist_ok=True)
+    try:
+        # Full path to the uploaded ZIP file
+        zip_path = instance.model.path
 
-            # Extract zip contents
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(target_dir)
-            
-            # Remove the original .zip file
-            os.remove(zip_path)
+        # Define your final models folder path
+        base_dir = os.path.dirname(os.path.dirname(zip_path))  # This gets you to /backend/modelArena/
+        target_dir = os.path.join(base_dir,'..','uploads', 'models')
 
+        os.makedirs(target_dir, exist_ok=True)
 
-            logger.info(f"Model unzipped to {target_dir} and original zip removed.")
+        # Unzip the model.zip contents into uploads/models/<username>_<model_id>/
+        extract_path = os.path.join(target_dir)
+        os.makedirs(extract_path, exist_ok=True)
 
-        except Exception as e:
-            logger.error(f"Unzipping failed: {e}")
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_path)
 
+        print(f"✅ Extracted to {extract_path}")
 
-        
+    except Exception as e:
+        print(f"❌ Error unzipping model: {str(e)}")
