@@ -1,37 +1,48 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUser } from "../context/AuthContext";
-import axios from "axios";
 
 const ModelUpload = () => {
-    const {userData} = useUser();
     const [file, setFile] = useState(null);
-    
+    const access = localStorage.getItem("access");
+
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
-    }
-    
-    const handleUpload = async (e) => {
-        const formData = new FormData();
-        formData.append("file", file);
+    };
 
-        try{
-            const response = await axios.post("uploadEndpoint", formData, {
-                headers: {'Content-Type': 'multipart/form-data'},
-                withCredentials: true
-            
+    const handleUpload = async () => {
+        if (!file) {
+            alert("Please select a file to upload.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("model", file); // Must match the name in serializer
+
+        try {
+            const response = await fetch("http://localhost:8000/model/", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${access}`,
+                    // ❌ DO NOT SET 'Content-Type' manually
+                },
+                body: formData,
             });
-            console.log(response.data);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Upload failed: ${response.status} ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log("Upload success:", data);
+            alert("Model uploaded successfully!");
+        } catch (error) {
+            console.error("Error during upload:", error);
+            alert("Upload failed.");
         }
-        catch(error){
-            console.error("Error occurred while uploading:", error);
-        }
-    }
-    
+    };
+
     return (
-        <div style={{display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            width: "100vw"
-        }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100vw" }}>
             <h2>Upload Your Strategy Model</h2>
             <input
                 type="file"
@@ -49,4 +60,4 @@ const ModelUpload = () => {
     );
 };
 
-export default ModelUpload
+export default ModelUpload;

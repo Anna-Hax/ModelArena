@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser } from "../context/AuthContext";
+//import { useUser } from "../context/AuthContext";
 import axios from "axios";
 
 const Login = () => {
     const navigate = useNavigate();
-    const { setUserData } = useUser();
+   // const { setUserData } = useUser();
 
-    const [form, setForm] = useState({ email: "", password: "" });
+    const [form, setForm] = useState({ username: "", password: "" });
 
     const handleChange = (e) => {
         setForm({
@@ -19,20 +19,20 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res1 = await axios.post("http://localhost:5173/api/token/", form)
+            const res1 = await axios.post("http://localhost:8000/auth/token/", form)
             const { access, refresh } = res1.data;
 
             localStorage.setItem("access", access);
             localStorage.setItem("refresh", refresh);
+            console.log(access)
+            //const hdr = {
+            //    headers: {
+            //        Authorization: `Bearer ${access}`
+            //    }
+            //};
 
-            const hdr = {
-                headers: {
-                    Authorization: `Bearer ${access}`
-                }
-            };
-
-            const res2 = await axios.post("http://localhost:5173/api/auth/users/get_user/", hdr);
-            await setUserData(res2.data);
+            //const res2 = await axios.post("http://localhost:5173/api/auth/users/get_user/", hdr);
+            //await setUserData(res2.data);
             navigate("/Home")
         }
 
@@ -48,10 +48,10 @@ const Login = () => {
             <form onSubmit={handleSubmit} style={{display:"flex", flexDirection:"column", alignItems:"center",
                  justifyContent:"center", width:"600px", padding: "10px"}}>
                 <input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    value={form.email}
+                    type="text"
+                    name="username"
+                    placeholder="Username"
+                    value={form.username}
                     onChange={handleChange}
                     style={{ width: "50%", padding: "8px", marginBottom: "10px" }}
                     required

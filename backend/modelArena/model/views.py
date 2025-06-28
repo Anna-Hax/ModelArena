@@ -14,9 +14,9 @@ class AiModelUploadView(generics.ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         qs = super().get_queryset()
-        return qs.filter(owner=user)
+        return qs.filter(user=user)
     
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
-        with zipfile.ZipFile('./upload/', 'r') as zip_ref:
-            zip_ref.extractall('./upload/unzip/')
+        serializer.save(user=self.request.user)
+        with zipfile.ZipFile('/uploads', 'r') as zip_ref:
+            zip_ref.extractall('./uploads/unzip/')
