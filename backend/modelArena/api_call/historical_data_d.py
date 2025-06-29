@@ -7,7 +7,6 @@ url = 'https://api.upstox.com/v2/historical-candle/NSE_EQ%7CINE848E01016/1minute
 
 headers = {
     'Accept': 'application/json',
-    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'  # ⛔ Needed for real request (replace this)
 }
 
 response = requests.get(url, headers=headers)
