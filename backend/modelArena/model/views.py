@@ -29,7 +29,11 @@ class AiModelUploadView(generics.ListCreateAPIView):
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(target_dir)  # ✅ Extract directly into models/
 
+
             print(f"✅ Extracted model to: {target_dir}")
+
+            os.remove(zip_path)
+
 
         except Exception as e:
             logger.error(f"❌ Error unzipping model: {str(e)}")

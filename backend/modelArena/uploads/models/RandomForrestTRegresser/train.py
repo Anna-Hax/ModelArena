@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.ensemble import RandomForestRegressor
 import pickle
+import os
 
 def load_data(file_path):
     df = pd.read_csv(file_path)
@@ -21,7 +22,17 @@ def prepare_features(df):
     return np.array(X), np.array(y)
 
 def main():
-    df = load_data("historical_data_d.csv")
+    # Get the base directory (where model.py resides)
+
+    # Construct full path to the historical data CSV
+    csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'hist_data_reliance.csv'))
+
+    df = pd.read_csv(csv_path)
+
+    # Load and process
+    df = pd.read_csv(csv_path)
+    X, y = prepare_features(df)
+
     X, y = prepare_features(df)
 
     base_model = RandomForestRegressor(n_estimators=100, random_state=42)
