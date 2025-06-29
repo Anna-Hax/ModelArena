@@ -13,28 +13,29 @@ class RunPredictionView(APIView):
 
     def post(self, request):
         try:
-            # Step 1: Run input_data_d.py once to get latest candle data
-            input_script = os.path.join(settings.BASE_DIR, 'api_call','input_data_d.py')
+            # Step 1: Run input_data_d.py to get latest candle data
+            input_script = os.path.join(settings.BASE_DIR, 'api_call', 'input_data_d.py')
             subprocess.run(["python", input_script], check=True)
 
             # Step 2: Loop through all uploaded models
             results = []
+
             for model_entry in AiModel.objects.all():
-                model_file_path = model_entry.model.path  # Full ZIP file path (after unzipping)
-                print(model_file_path)
-    
-            # Get the model folder name (strip ZIP extension if needed)
+                model_file_path = model_entry.model.path
+                print("📦 ZIP path:", model_file_path)
+
+                # Extract folder name from uploaded ZIP name
                 model_folder_name = os.path.splitext(os.path.basename(model_file_path))[0]
-                print(model_folder_name)
                 model_folder = os.path.join(settings.BASE_DIR, 'uploads', 'models', model_folder_name)
-                print(model_folder)
                 model_script_path = os.path.join(model_folder, 'model.py')
-                print(model_script_path)
+                print("📁 Model folder:", model_folder)
+                print("📜 Script path:", model_script_path)
 
                 if not os.path.exists(model_script_path):
-                    continue  # Skip if model.py doesn't exist
+                    print(f"❌ model.py not found for {model_entry.model.name}")
+                    continue
 
-                # Run the model.py and capture output
+                # Run model.py script
                 try:
                     result = subprocess.run(
                         ["python", model_script_path],
@@ -42,6 +43,8 @@ class RunPredictionView(APIView):
                     )
                     output_lines = result.stdout.strip().split('\n')
                     prediction_line = output_lines[-1]
+
+                    # Must be valid JSON - use json.dumps in model.py
                     predictions = json.loads(prediction_line.replace("Predicted close prices: ", ""))
 
                     results.append({
@@ -51,6 +54,7 @@ class RunPredictionView(APIView):
                     })
 
                 except subprocess.CalledProcessError as e:
+                    print(f"🔴 Error running model: {e.stderr}")
                     results.append({
                         "uploaded_by": model_entry.user.username,
                         "model_file": model_entry.model.name,
@@ -63,6 +67,7 @@ class RunPredictionView(APIView):
             })
 
         except Exception as e:
+            print(f"❌ Unexpected error: {str(e)}")
             return Response({
                 "status": "error",
                 "message": str(e)

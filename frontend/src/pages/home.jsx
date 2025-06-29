@@ -5,14 +5,13 @@ const Home = () => {
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
 
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
         const access = localStorage.getItem("access");
         const response = await axios.post(
-          "http://localhost:8000/prediction/run-prediction", // Your API endpoint
+          "http://localhost:8000/prediction/run-prediction/", // Your API endpoint
           {},
           {
             headers: {
@@ -23,7 +22,17 @@ const Home = () => {
         setModels(response.data.results);
       } catch (err) {
         setError("Failed to fetch predictions.");
-        console.error(err);
+
+        if (err.response) {
+          // Backend responded with an error (like 500)
+          console.error("🔴 Server Error:", err.response.data);
+        } else if (err.request) {
+          // Request was made but no response
+          console.error("🔴 No response from server:", err.request);
+        } else {
+          // Something else went wrong
+          console.error("🔴 Error:", err.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -45,12 +54,20 @@ const Home = () => {
           {models.map((model, index) => (
             <div key={index} className="model-card">
               <h3>Uploader: {model.uploaded_by}</h3>
-              <p><strong>Model File:</strong> {model.model_file}</p>
+              <p>
+                <strong>Model File:</strong> {model.model_file}
+              </p>
               {model.predictions ? (
                 <div className="predictions">
-                  <p><strong>+5 min:</strong> {model.predictions["+5min"]}</p>
-                  <p><strong>+10 min:</strong> {model.predictions["+10min"]}</p>
-                  <p><strong>+15 min:</strong> {model.predictions["+15min"]}</p>
+                  <p>
+                    <strong>+5 min:</strong> {model.predictions["+5min"]}
+                  </p>
+                  <p>
+                    <strong>+10 min:</strong> {model.predictions["+10min"]}
+                  </p>
+                  <p>
+                    <strong>+15 min:</strong> {model.predictions["+15min"]}
+                  </p>
                 </div>
               ) : (
                 <p className="error-text">❌ Error: {model.error}</p>
