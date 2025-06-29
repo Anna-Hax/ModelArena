@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'home.apps.HomeConfig',
     'model.apps.ModelConfig',
     'rest_framework_simplejwt',
+    'prediction.apps.PredictionConfig',
 ]
 
 MIDDLEWARE = [

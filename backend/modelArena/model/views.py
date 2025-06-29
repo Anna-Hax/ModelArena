@@ -21,8 +21,11 @@ class AiModelUploadView(generics.ListCreateAPIView):
 
         try:
             zip_path = instance.model.path  # Full path to uploaded ZIP
+            print(zip_path)
             base_dir = os.path.dirname(os.path.dirname(zip_path))  # /backend/modelArena/
+            print(base_dir)
             target_dir = os.path.join(base_dir, 'uploads', 'models')
+            print(target)
 
             os.makedirs(target_dir, exist_ok=True)
 
