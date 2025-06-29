@@ -6,7 +6,7 @@ import axios from "axios";
 const Register = () => {
     const navigate = useNavigate();
     const [form, setForm] = useState({
-        name: "", email: "", password: ""
+        username: "", password: ""
     });
 
     const handleChange = (e) => {
@@ -19,7 +19,8 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post("http://localhost:8000/api/auth/users/register/", form);
+            const response = await axios.post("http://localhost:8000/auth/register/", form);
+            console.log(response.data)
             navigate("/login");
         } catch (error) {
             console.error("Error while creating account:", error);
@@ -54,18 +55,9 @@ const Register = () => {
             >
                 <input
                     type="text"
-                    name="name"
-                    placeholder="Name"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                    style={{ width: "50%", padding: "8px" }}
-                />
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    value={form.email}
+                    name="username"
+                    placeholder="Username"
+                    value={form.username}
                     onChange={handleChange}
                     required
                     style={{ width: "50%", padding: "8px" }}

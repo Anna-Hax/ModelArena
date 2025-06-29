@@ -1,77 +1,61 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUser } from "../context/AuthContext";
-import axios from "axios";
 
 const ModelUpload = () => {
-    const { userData } = useUser();
     const [file, setFile] = useState(null);
+    const access = localStorage.getItem("access");
 
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
     };
 
-    const handleUpload = async (e) => {
+    const handleUpload = async () => {
+        if (!file) {
+            alert("Please select a file to upload.");
+            return;
+        }
+
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("model", file); // Must match the name in serializer
 
         try {
-            const response = await axios.post("uploadEndpoint", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-                withCredentials: true,
+            const response = await fetch("http://localhost:8000/model/", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${access}`,
+                    // ❌ DO NOT SET 'Content-Type' manually
+                },
+                body: formData,
             });
-            console.log(response.data);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Upload failed: ${response.status} ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log("Upload success:", data);
+            alert("Model uploaded successfully!");
         } catch (error) {
-            console.error("Error occurred while uploading:", error);
+            console.error("Error during upload:", error);
+            alert("Upload failed.");
         }
     };
 
     return (
-        <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100vh",
-            flexDirection: 'column'
-        }}>
-            <div style={{
-                width: "35vw",
-                padding: "30px",
-                height: "50vh",
-                borderRadius: "12px",
-                boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-                textAlign: "center"
-            }}>
-                <h2 style={{ marginBottom: "20px", fontSize: "24px", fontWeight: "600" }}>
-                    Upload Your Strategy Model
-                </h2>
-                <input
-                    type="file"
-                    accept=".zip,.py"
-                    onChange={handleFileChange}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        marginBottom: "15px",
-                        border: "1px solid #ccc",
-                        borderRadius: "6px"
-                    }}
-                />
-                <button
-                    onClick={handleUpload}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontWeight: "500"
-                    }}
-                >
-                    Upload Model
-                </button>
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100vw" }}>
+            <h2>Upload Your Strategy Model</h2>
+            <input
+                type="file"
+                accept=".zip,.py"
+                onChange={handleFileChange}
+                style={{ width: "50%", padding: "8px", marginBottom: "10px" }}
+            />
+            <button
+                style={{ width: "50%", padding: "8px", marginBottom: "10px" }}
+                onClick={handleUpload}
+            >
+                Upload Model
+            </button>
         </div>
     );
 };

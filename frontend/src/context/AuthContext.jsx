@@ -8,12 +8,12 @@ export const UserContextProvider = ({children}) => {
     const [userData, setUserData] = useState(null);
     const fetchUserData = async () => {
         try{
-            const response = await axios.get("http://localhost:5173/api/auth/users/get_user/");
+            const response = await axios.get("http://localhost:8000/auth/get_user/");
             // console.log(response.data);
             setUserData(response.data);
         }catch(error)
         {
-            console.log("user not logged in");
+            console.log("user not logged in", error);
             // console.log(error);
             setUserData(null);
         }
