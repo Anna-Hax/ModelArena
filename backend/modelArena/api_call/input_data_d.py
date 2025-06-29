@@ -61,12 +61,7 @@ if response.status_code == 200:
     candles = response.json().get("data", {}).get("candles", [])
 
     if candles:
-        df = pd.DataFrame(candles, columns=["timestamp", "open", "high", "low", "close", "volume", "oi"])
-        df.drop(columns=["oi"], inplace=True)
-
-        # Convert timestamp and sort ascending
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-        df = df.sort_values(by="timestamp")
+        
 
         # Filter first 10 rows after 9:15 AM
         market_open = datetime.strptime(f"{today} 09:15:00+05:30", "%Y-%m-%d %H:%M:%S%z")
