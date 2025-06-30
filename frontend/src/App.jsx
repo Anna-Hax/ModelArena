@@ -5,21 +5,20 @@ import Home from "./pages/home";
 import Register from "./pages/register";
 import ModelUpload from "./pages/modelUpload";
 import { UserContextProvider } from "./context/AuthContext";
+import Wallet from "./pages/walletConnect";
 import './App.css';
 
 const App = () => {
   return (
-    <UserContextProvider>
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/UploadModel" element={<ModelUpload />} />
           <Route path="/home" element={<Home />} />
-
+          <Route path="/wallet" element={<Wallet />} />
         </Routes>
       </Router>
-    </UserContextProvider>
   );
 };
 
