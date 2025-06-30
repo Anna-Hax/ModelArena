@@ -33,6 +33,10 @@ ALLOWED_HOSTS = []
 USE_TZ = True
 TIME_ZONE = "Asia/Kolkata"
 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -42,8 +46,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
     'rest_framework',
     'corsheaders',
+    'django_celery_beat',
     'home.apps.HomeConfig',
     'model.apps.ModelConfig',
     'rest_framework_simplejwt',

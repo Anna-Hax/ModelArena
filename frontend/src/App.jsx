@@ -4,7 +4,9 @@ import Login from "./pages/login";
 import Home from "./pages/home";
 import Register from "./pages/register";
 import ModelUpload from "./pages/modelUpload";
+
 import Hackathonlanding from "./pages/hackathonLanding";
+import Leaderboard from "./pages/leaderboard";
 import { UserContextProvider } from "./context/AuthContext";
 import './App.css';
 import HackathonLanding from "./pages/hackathonLanding";
@@ -12,14 +14,14 @@ import HackathonLanding from "./pages/hackathonLanding";
 const App = () => {
   return (
     <UserContextProvider>
-      <Router>
+      <Router>f
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/UploadModel" element={<ModelUpload />} />
           <Route path="/home" element={<Home />} />
           <Route path="/landing" element={<Hackathonlanding/>} />
-
+          <Route path="/leaderboard" element={<Leaderboard />} />
         </Routes>
       </Router>
     </UserContextProvider>
