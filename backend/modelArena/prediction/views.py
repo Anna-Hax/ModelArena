@@ -1,12 +1,15 @@
 import os
+import sys
 import subprocess
 import json
+import datetime
+from collections import defaultdict
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
 from model.models import AiModel
-
+from prediction.models import PredictionResult
 
 class RunPredictionView(APIView):
     permission_classes = [IsAuthenticated]
@@ -15,37 +18,37 @@ class RunPredictionView(APIView):
         try:
             # Step 1: Run input_data_d.py to get latest candle data
             input_script = os.path.join(settings.BASE_DIR, 'api_call', 'input_data_d.py')
-            subprocess.run(["python", input_script], check=True)
+            subprocess.run([sys.executable, input_script], check=True)
 
-            # Step 2: Loop through all uploaded models
             results = []
 
             for model_entry in AiModel.objects.all():
                 model_file_path = model_entry.model.path
-                print("📦 ZIP path:", model_file_path)
-
-                # Extract folder name from uploaded ZIP name
                 model_folder_name = os.path.splitext(os.path.basename(model_file_path))[0]
                 model_folder = os.path.join(settings.BASE_DIR, 'uploads', 'models', model_folder_name)
                 model_script_path = os.path.join(model_folder, 'model.py')
-                print("📁 Model folder:", model_folder)
-                print("📜 Script path:", model_script_path)
 
                 if not os.path.exists(model_script_path):
                     print(f"❌ model.py not found for {model_entry.model.name}")
                     continue
 
-                # Run model.py script
                 try:
                     result = subprocess.run(
-                        ["python", model_script_path],
+                        [sys.executable, model_script_path],
                         check=True, capture_output=True, text=True
-                    )
+                        )
                     output_lines = result.stdout.strip().split('\n')
                     prediction_line = output_lines[-1]
 
-                    # Must be valid JSON - use json.dumps in model.py
                     predictions = json.loads(prediction_line.replace("Predicted close prices: ", ""))
+
+                    PredictionResult.objects.create(
+                        model=model_entry,
+                        timestamp=datetime.datetime.now(),
+                        pred_5=predictions["+5min"],
+                        pred_10=predictions["+10min"],
+                        pred_15=predictions["+15min"]
+                    )
 
                     results.append({
                         "uploaded_by": model_entry.user.username,
@@ -72,3 +75,50 @@ class RunPredictionView(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=500)
+
+class LeaderboardView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        model_errors = defaultdict(lambda: {
+            "user": "",
+            "model_file": "",
+            "total_error": 0,
+            "count": 0,
+        })
+
+        results = PredictionResult.objects.select_related('model__user').all()
+
+        for result in results:
+            model_instance = result.model
+            model_id = model_instance.id
+            user = model_instance.user.username
+
+            for err in [result.error_5, result.error_10, result.error_15]:
+                if err is not None:
+                    model_errors[model_id]["total_error"] += err
+                    model_errors[model_id]["count"] += 1
+
+            model_errors[model_id]["user"] = user
+            model_errors[model_id]["model_file"] = model_instance.model.url  # or .name if .url not configured
+
+        # Compute average and rank
+        leaderboard = []
+        for model_id, data in model_errors.items():
+            if data["count"] == 0:
+                continue  # Skip if no errors recorded
+            avg_error = data["total_error"] / data["count"]
+            leaderboard.append({
+                "model_file": data["model_file"],
+                "uploaded_by": data["user"],
+                "average_error": round(avg_error, 4)
+            })
+
+        # Sort by error ascending (lower is better)
+        leaderboard.sort(key=lambda x: x["average_error"])
+
+        # Add rank
+        for i, entry in enumerate(leaderboard, start=1):
+            entry["rank"] = i
+
+        return Response({"leaderboard": leaderboard})
