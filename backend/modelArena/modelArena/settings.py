@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+
 from datetime import timedelta
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +30,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+USE_TZ = True
+TIME_ZONE = "Asia/Kolkata"
 
 # Application definition
 
@@ -44,6 +48,7 @@ INSTALLED_APPS = [
     'model.apps.ModelConfig',
     'rest_framework_simplejwt',
     'prediction.apps.PredictionConfig',
+    'hackathon',
 ]
 
 MIDDLEWARE = [
@@ -57,6 +62,10 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  
     'django.middleware.common.CommonMiddleware',
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 ROOT_URLCONF = 'modelArena.urls'
 CORS_ALLOWED_ORIGINS = [
