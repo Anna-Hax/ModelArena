@@ -7,7 +7,7 @@ const PROVIDER_OPTIONS = {
   coinbasewallet: {
     package: createCoinbaseWalletSDK,
     options: {
-      appName: 'ModelArena',
+      appName: 'coinbase',
       infuraId: { 3: 'https://ropsten.infuria.io/v3/fefnefnesfe' }
     }
   }
