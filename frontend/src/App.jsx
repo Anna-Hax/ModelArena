@@ -8,12 +8,12 @@ import ModelUpload from "./pages/modelUpload";
 import Hackathonlanding from "./pages/hackathonLanding";
 import Leaderboard from "./pages/leaderboard";
 import { UserContextProvider } from "./context/AuthContext";
+import Wallet from "./pages/walletConnect";
 import './App.css';
 
 const App = () => {
   return (
-    <UserContextProvider>
-      <Router>f
+      <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -21,10 +21,8 @@ const App = () => {
           <Route path="/home" element={<Home />} />
           <Route path="/landing" element={<Hackathonlanding/>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-
         </Routes>
       </Router>
-    </UserContextProvider>
   );
 };
 
