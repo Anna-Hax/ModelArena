@@ -43,3 +43,5 @@ celerybeat.pid
 .DS_Store
 Thumbs.db
 ehthumbs.db
+.venv
+.csv
