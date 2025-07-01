@@ -9,7 +9,6 @@ import Hackathonlanding from "./pages/hackathonLanding";
 import Leaderboard from "./pages/leaderboard";
 import { UserContextProvider } from "./context/AuthContext";
 import './App.css';
-import HackathonLanding from "./pages/hackathonLanding";
 
 const App = () => {
   return (
@@ -22,6 +21,7 @@ const App = () => {
           <Route path="/home" element={<Home />} />
           <Route path="/landing" element={<Hackathonlanding/>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+
         </Routes>
       </Router>
     </UserContextProvider>
