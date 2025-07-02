@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'prediction.apps.PredictionConfig',
     'hackathon',
+    'arena',
+   # 'staking',
 ]
 
 MIDDLEWARE = [

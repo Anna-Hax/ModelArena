@@ -1,5 +1,5 @@
 arena_abi = [
-    {
+  {
       "inputs": [],
       "stateMutability": "nonpayable",
       "type": "constructor"
