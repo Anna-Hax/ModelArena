@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ethers } from "ethers";
-import { getArenaContract } from "../utils/contract"; // Make sure this returns a connected contract instance
+import { getArenaContract } from "../utils/contract";
+import CountdownTimer from "../components/Counter";
+
 
 const Home = () => {
   const [models, setModels] = useState([]);
@@ -11,9 +13,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const HACKATHON_ID = 0; // Default/first hackathon
+  const HACKATHON_ID = 0;
 
-  // 🌐 Fetch Django Data (title, model predictions)
   useEffect(() => {
     const fetchBackendData = async () => {
       try {
@@ -34,31 +35,33 @@ const Home = () => {
         console.error("🔴 Django fetch failed:", err);
         setError("Failed to fetch predictions or title.");
       }
+      finally {
+        setLoading(false);
+      }
     };
 
     fetchBackendData();
   }, []);
 
-  // 🔗 Fetch blockchain data
-  useEffect(() => {
-    const fetchOnChainData = async () => {
-      try {
-        const contract = await getArenaContract();
-        const players = await contract.getPlayers(HACKATHON_ID);
-        const hackathon = await contract.hackathons(HACKATHON_ID);
+  // useEffect(() => {
+  //   const fetchOnChainData = async () => {
+  //     try {
+  //       const contract = await getArenaContract();
+  //       const players = await contract.getPlayers(HACKATHON_ID);
+  //       const hackathon = await contract.hackathons(HACKATHON_ID);
 
-        setParticipants(players);
-        setPrizePool(ethers.formatEther(hackathon.prizePool));
-      } catch (err) {
-        console.error("🔴 Blockchain fetch failed:", err);
-        setError("Failed to fetch blockchain data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       setParticipants(players);
+  //       setPrizePool(ethers.formatEther(hackathon.prizePool));
+  //     } catch (err) {
+  //       console.error("🔴 Blockchain fetch failed:", err);
+  //       setError("Failed to fetch blockchain data.");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchOnChainData();
-  }, []);
+  //   fetchOnChainData();
+  // }, []);
 
   if (loading) return <div>⏳ Loading predictions...</div>;
   if (error) return <div>❌ {error}</div>;
@@ -80,17 +83,34 @@ const Home = () => {
           {models.map((model, index) => (
             <div key={index} className="model-card">
               <h3>Uploader: {model.uploaded_by}</h3>
-              <p>
-                <strong>Model File:</strong> {model.model_file}
-              </p>
-              {model.predictions ? (
+              <p><strong>Model File:</strong> {model.model_file}</p>
+
+              {model.predictions && model.timestamp ? (
                 <div className="predictions">
-                  <p><strong>+5 min:</strong> {model.predictions["+5min"]}</p>
-                  <p><strong>+10 min:</strong> {model.predictions["+10min"]}</p>
-                  <p><strong>+15 min:</strong> {model.predictions["+15min"]}</p>
+                  <CountdownTimer
+                    label="+5 min"
+                    prediction={model.predictions["+5min"]}
+                    actual={model.actual_5}
+                    baseTime={model.timestamp}
+                    delayMinutes={5}
+                  />
+                  <CountdownTimer
+                    label="+10 min"
+                    prediction={model.predictions["+10min"]}
+                    actual={model.actual_10}
+                    baseTime={model.timestamp}
+                    delayMinutes={10}
+                  />
+                  <CountdownTimer
+                    label="+15 min"
+                    prediction={model.predictions["+15min"]}
+                    actual={model.actual_15}
+                    baseTime={model.timestamp}
+                    delayMinutes={15}
+                  />
                 </div>
               ) : (
-                <p className="error-text">❌ Error: {model.error}</p>
+                <p className="error-text">❌ Missing predictions or timestamp.</p>
               )}
             </div>
           ))}

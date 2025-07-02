@@ -4,15 +4,20 @@ from datetime import timedelta
 class HackathonConfig(models.Model):
     title = models.CharField(max_length=255)
     start_time = models.DateTimeField()
-    duration_minutes = models.IntegerField(default=60)  # e.g. 1 hour
+    duration_minutes = models.IntegerField(default=60)
 
     dataset = models.FileField(
-        upload_to='hackathon_datasets/',  # This is the subfolder inside MEDIA_ROOT
+        upload_to='hackathon_datasets/',
         blank=True,
         null=True,
         help_text="Upload dataset file (CSV, JSON, ZIP, etc.)"
     )
 
+    blockchain_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="ID of this hackathon on the blockchain"
+    )
 
     @property
     def end_time(self):
@@ -20,5 +25,6 @@ class HackathonConfig(models.Model):
 
     def __str__(self):
         return self.title
+
     
   
