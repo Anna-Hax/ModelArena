@@ -25,6 +25,8 @@ urlpatterns = [
     path('model/', include('model.urls')),
     path('prediction/', include('prediction.urls')),
     path("hackathon/", include("hackathon.urls")),
+    path("arena/", include("arena.urls")),
+   # path("stake/", include("staking.urls")),
 ]
 
 # Serve media files during development

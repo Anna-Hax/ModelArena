@@ -11,6 +11,7 @@ from django.conf import settings
 from model.models import AiModel
 from prediction.models import PredictionResult
 
+
 class RunPredictionView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -29,7 +30,7 @@ class RunPredictionView(APIView):
                 model_script_path = os.path.join(model_folder, 'model.py')
 
                 if not os.path.exists(model_script_path):
-                    print(f"❌ model.py not found for {model_entry.model.name}")
+                    print(f" model.py not found for {model_entry.model.name}")
                     continue
 
                 try:
@@ -42,7 +43,7 @@ class RunPredictionView(APIView):
 
                     predictions = json.loads(prediction_line.replace("Predicted close prices: ", ""))
 
-                    PredictionResult.objects.create(
+                    prediction_obj = PredictionResult.objects.create(
                         model=model_entry,
                         timestamp=datetime.datetime.now(),
                         pred_5=predictions["+5min"],
@@ -53,11 +54,15 @@ class RunPredictionView(APIView):
                     results.append({
                         "uploaded_by": model_entry.user.username,
                         "model_file": model_entry.model.name,
-                        "predictions": predictions
+                        "predictions": predictions,
+                        "actual_5":  prediction_obj.actual_5,
+                        "actual_10": prediction_obj.actual_10,
+                        "actual_15": prediction_obj.actual_15,
+                        "timestamp": prediction_obj.timestamp
                     })
 
                 except subprocess.CalledProcessError as e:
-                    print(f"🔴 Error running model: {e.stderr}")
+                    print(f" Error running model: {e.stderr}")
                     results.append({
                         "uploaded_by": model_entry.user.username,
                         "model_file": model_entry.model.name,

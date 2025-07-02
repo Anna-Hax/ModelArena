@@ -17,6 +17,7 @@
     "ethers": "^5.8.0",
     "node": "^22.17.0",
     "react": "^19.1.0",
+    "react-countdown": "^2.3.6",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
     "thirdweb": "^5.105.4",
