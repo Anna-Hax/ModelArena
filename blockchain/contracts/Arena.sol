@@ -53,7 +53,7 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
 
     function joinHackathon(uint256 id) external payable hackathonExists(id) {
         Hackathon storage h = hackathons[id];
-        require(block.timestamp < h.startTime, "Hackathon already started");
+        require(block.timestamp < h.endTime, "Hackathon already ended");
         require(msg.value > 0, "Stake required");
 
         h.players.push(msg.sender);
