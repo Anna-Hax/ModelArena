@@ -7,6 +7,7 @@ import Hackathonlanding from "./pages/hackathonLanding";
 import Leaderboard from "./pages/leaderboard";
 import ConnectWallet from "./pages/walletConnect";
 import SendEtherPage from './pages/walletinfo';
+import HackathonInfo from "./pages/HackathonInfo(blockchain)";
 
 import { UserContextProvider } from "./context/AuthContext";
 import { WalletProvider } from "./context/WalletContext"; // ✅ Correct import
@@ -27,6 +28,8 @@ const App = () => {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/wallet" element={<ConnectWallet />} />
             <Route path="/wallet-info" element={<SendEtherPage />} />
+            <Route path="/hack-info" element={<HackathonInfo />} />
+
           </Routes>
         </Router>
       </WalletProvider>
