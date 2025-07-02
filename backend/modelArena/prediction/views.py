@@ -11,6 +11,9 @@ from django.conf import settings
 from model.models import AiModel
 from prediction.models import PredictionResult
 
+from blockchain.contract import contract
+
+
 class RunPredictionView(APIView):
     permission_classes = [IsAuthenticated]
 
