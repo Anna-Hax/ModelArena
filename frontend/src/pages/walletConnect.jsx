@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
+import axios from 'axios';
 
 const ConnectWallet = () => {
   const { connectWallet, disconnectWallet, address, isConnected } = useWallet();
-  console.log("address", address, "isConnected", isConnected);
 
+  // 🧠 POST wallet address to backend once connected
+  useEffect(() => {
+    const postWallet = async () => {
+      if (isConnected && address) {
+        try {
+          const access = localStorage.getItem('access');
+
+          const res = await axios.post(
+            'http://localhost:8000/auth/save-wallet/',
+            { wallet_address: address },
+            {
+              headers: {
+                Authorization: `Bearer ${access}`,
+              },
+            }
+          );
+
+          console.log("✅ Wallet address saved:", res.data);
+        } catch (err) {
+          console.error("❌ Failed to save wallet address:", err);
+        }
+      }
+    };
+
+    postWallet();
+  }, [isConnected, address]);
 
   return (
     <div>
@@ -24,4 +50,3 @@ const ConnectWallet = () => {
 };
 
 export default ConnectWallet;
-

@@ -7,7 +7,7 @@ load_dotenv()
 RPC_URL = os.getenv("RPC_URL")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 PUBLIC_ADDRESS = os.getenv("PUBLIC_ADDRESS")
-CHAIN_ID = int(os.getenv("CHAIN_ID", 11155111))  
+CHAIN_ID = int(os.getenv("CHAIN_ID"))  
 
 web3 = Web3(Web3.HTTPProvider(RPC_URL))
 

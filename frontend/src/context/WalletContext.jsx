@@ -24,11 +24,11 @@ export const WalletProvider = ({ children }) => {
   useEffect(() => {
     const restoreWallet = async () => {
       if (window.ethereum && window.ethereum.selectedAddress) {
-        const web3Provider = new ethers.BrowserProvider(window.ethereum); // ✅ v6
-        const signer = await web3Provider.getSigner();
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = await provider.getSigner();
         const walletAddress = await signer.getAddress();
 
-        setProvider(web3Provider);
+        setProvider(provider);
         setSigner(signer);
         setAddress(walletAddress);
         setIsConnected(true);
