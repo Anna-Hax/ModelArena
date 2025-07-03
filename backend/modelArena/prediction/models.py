@@ -7,7 +7,7 @@ class PredictionResult(models.Model):
     model = models.ForeignKey(AiModel, on_delete=models.CASCADE)
     hackathon = models.ForeignKey(HackathonConfig, on_delete=models.CASCADE, null=True, blank=True)#optional right now
     timestamp = models.DateTimeField(auto_now_add=True)
-
+    rewarded = models.BooleanField(default=False)
     pred_5 = models.FloatField()
     pred_10 = models.FloatField()
     pred_15 = models.FloatField()

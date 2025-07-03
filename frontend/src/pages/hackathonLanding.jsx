@@ -83,42 +83,46 @@ const HackathonLanding = () => {
     setShowModal(false);
     setTxError("");
   };
-
 const handleJoinAndEnter = async () => {
   try {
     setIsJoining(true);
 
-    const contract = await getArenaContract();
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum); // ✅ v5 syntax
     const signer = provider.getSigner();
     const userAddress = await signer.getAddress();
 
-    // ✅ Fetch latest hackathon ID
+    const contract = await getArenaContract(signer); // Pass signer to write
+
+    // ✅ Get the latest hackathon ID
     const counter = await contract.hackathonCounter();
     if (counter.toNumber() === 0) {
       setTxError("❌ No active hackathon on blockchain.");
       return;
     }
+
     const hackathonId = counter.toNumber() - 1;
 
-    // ✅ Join the latest hackathon
+    // ✅ Check if user already joined
+    const players = await contract.getPlayers(hackathonId);
+    const alreadyJoined = players.some(
+      (addr) => addr.toLowerCase() === userAddress.toLowerCase()
+    );
+
+    if (alreadyJoined) {
+      console.log("✅ Already joined, skipping payment");
+      setShowModal(false);
+      navigate("/home");
+      return;
+    }
+
+    // ❌ Not joined yet, proceed to pay & join
     const tx = await contract.joinHackathon(hackathonId, {
       value: ethers.utils.parseEther("1.0"),
     });
     await tx.wait();
 
-    // ✅ Send wallet address to Django
-    await axios.post("http://localhost:8000/auth/save-wallet/", {
-      wallet_address: userAddress,
-    }, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("access")}`,
-      },
-    });
-
     setShowModal(false);
     navigate("/home");
-
   } catch (err) {
     console.error("Join failed:", err);
     setTxError("❌ Join failed. " + (err?.message || ""));
@@ -126,7 +130,6 @@ const handleJoinAndEnter = async () => {
     setIsJoining(false);
   }
 };
-
 
 
 
