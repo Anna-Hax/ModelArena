@@ -4,7 +4,6 @@ import { ethers } from "ethers";
 import { getArenaContract } from "../utils/contract";
 import CountdownTimer from "../components/Counter";
 
-
 const Home = () => {
   const [models, setModels] = useState([]);
   const [hackathonTitle, setHackathonTitle] = useState("");
@@ -12,8 +11,6 @@ const Home = () => {
   const [prizePool, setPrizePool] = useState("0");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const HACKATHON_ID = 0;
 
   useEffect(() => {
     const fetchBackendData = async () => {
@@ -35,33 +32,43 @@ const Home = () => {
         console.error("🔴 Django fetch failed:", err);
         setError("Failed to fetch predictions or title.");
       }
-      finally {
-        setLoading(false);
-      }
     };
 
     fetchBackendData();
   }, []);
 
-  // useEffect(() => {
-  //   const fetchOnChainData = async () => {
-  //     try {
-  //       const contract = await getArenaContract();
-  //       const players = await contract.getPlayers(HACKATHON_ID);
-  //       const hackathon = await contract.hackathons(HACKATHON_ID);
+  useEffect(() => {
+    const fetchOnChainData = async () => {
+      try {
+        const contract = await getArenaContract();
 
-  //       setParticipants(players);
-  //       setPrizePool(ethers.formatEther(hackathon.prizePool));
-  //     } catch (err) {
-  //       console.error("🔴 Blockchain fetch failed:", err);
-  //       setError("Failed to fetch blockchain data.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+        const counter = await contract.hackathonCounter();
+        const currentHackathonId = counter.toNumber() - 1;
 
-  //   fetchOnChainData();
-  // }, []);
+        if (currentHackathonId < 0) {
+          console.warn("No hackathon created yet.");
+          return;
+        }
+
+        const players = await contract.getPlayers(currentHackathonId);
+        const hackathon = await contract.hackathons(currentHackathonId);
+
+        setParticipants(players);
+        setPrizePool(ethers.utils.formatEther(hackathon.prizePool));
+      } catch (err) {
+        console.error("🔴 Blockchain fetch failed:", err);
+        setError("Failed to fetch blockchain data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOnChainData();
+
+    // Optional: refetch every 15s for real-time updates
+    const interval = setInterval(fetchOnChainData, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) return <div>⏳ Loading predictions...</div>;
   if (error) return <div>❌ {error}</div>;

@@ -3,7 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { getArenaContract } from "../utils/contract";
 import * as ethers from "ethers";
-
 const HackathonLanding = () => {
   const [hackathon, setHackathon] = useState(null);
   const [error, setError] = useState("");
@@ -85,23 +84,51 @@ const HackathonLanding = () => {
     setTxError("");
   };
 
-  const handleJoinAndEnter = async () => {
-    try {
-      setIsJoining(true);
-      const contract = await getArenaContract();
-      const tx = await contract.joinHackathon(0, {
-        value: ethers.parseEther("1.0") // 💰 Entry Fee: 1 ETH
-      });
-      await tx.wait();
-      setShowModal(false);
-      navigate("/home");
-    } catch (err) {
-      console.error("Join failed:", err);
-      setTxError("❌ Transaction failed. Please try again.");
-    } finally {
-      setIsJoining(false);
+const handleJoinAndEnter = async () => {
+  try {
+    setIsJoining(true);
+
+    const contract = await getArenaContract();
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    // ✅ Fetch latest hackathon ID
+    const counter = await contract.hackathonCounter();
+    if (counter.toNumber() === 0) {
+      setTxError("❌ No active hackathon on blockchain.");
+      return;
     }
-  };
+    const hackathonId = counter.toNumber() - 1;
+
+    // ✅ Join the latest hackathon
+    const tx = await contract.joinHackathon(hackathonId, {
+      value: ethers.utils.parseEther("1.0"),
+    });
+    await tx.wait();
+
+    // ✅ Send wallet address to Django
+    await axios.post("http://localhost:8000/auth/save-wallet/", {
+      wallet_address: userAddress,
+    }, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access")}`,
+      },
+    });
+
+    setShowModal(false);
+    navigate("/home");
+
+  } catch (err) {
+    console.error("Join failed:", err);
+    setTxError("❌ Join failed. " + (err?.message || ""));
+  } finally {
+    setIsJoining(false);
+  }
+};
+
+
+
 
   const isLastTen = timer !== null && timer <= 10 && status !== "ended";
 
@@ -191,3 +218,5 @@ const HackathonLanding = () => {
 };
 
 export default HackathonLanding;
+
+
