@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 class PredictionResult(models.Model):
     model = models.ForeignKey(AiModel, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
-
+    rewarded = models.BooleanField(default=False)
     pred_5 = models.FloatField()
     pred_10 = models.FloatField()
     pred_15 = models.FloatField()
