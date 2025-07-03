@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getArenaContract } from "../utils/contract";
-import { ethers } from "ethers";
+//import { ethers } from "ethers";
 //
 //const HackathonInfo = () => {
 //  const [hackathon, setHackathon] = useState(null);

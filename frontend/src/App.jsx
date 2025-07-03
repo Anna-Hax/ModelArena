@@ -12,7 +12,7 @@ import JoinHackathon from "./pages/joinHackathon";
 import RequireAuth from "./context/AuthContext";
 import { WalletProvider } from "./context/WalletContext";
 import Navbar from "./components/Navbar";
-
+import MLModelsBattle from "./pages/landingPage"
 import "./App.css";
 
 // ✅ Layout with Navbar
@@ -31,7 +31,7 @@ const App = () => {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
+          <Route path="" element={<MLModelsBattle />} />
           {/* Protected routes */}
           <Route element={<RequireAuth />}>
             <Route
