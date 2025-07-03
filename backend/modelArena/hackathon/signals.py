@@ -5,7 +5,7 @@ from .models import HackathonConfig
 
 from blockchain.arena_contract import create_hackathon as create_onchain_hackathon
 from blockchain.arena_contract import contract
-from blockchain.web3 import web3
+from blockchain.web3_config import web3
 
 @receiver(post_save, sender=HackathonConfig)
 def sync_to_blockchain(sender, instance, created, **kwargs):
