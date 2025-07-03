@@ -28,10 +28,14 @@ def save_wallet_address(request):
     if not wallet_address:
         return Response({"error": "Wallet address required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    request.user.wallet_address = wallet_address
-    request.user.save()
-
-    return Response({"message": "Wallet address saved successfully"})
+    try:
+        profile, created = Profile.objects.get_or_create(user=request.user)
+        profile.wallet_address = wallet_address
+        profile.save()
+        return Response({"message": "Wallet address saved successfully"})
+    except Exception as e:
+        logger.error(f"Failed to save wallet address: {e}")
+        return Response({"error": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

@@ -123,16 +123,30 @@ const Home = () => {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = await getArenaContract(signer);
+      const counter = await contract.hackathonCounter();
+      const hackathonId = counter.toNumber()-1;
 
-      const tx = await signer.sendTransaction({
-        to: contract.address,
-        value: ethers.utils.parseEther("1.0"),
-        gasLimit: 100000,
-      });
+      const players = await contract.getPlayers(hackathonId);
+      const alreadyJoined = players.some(
+        (addr) => addr.toLowerCase() === userAddress.toLowerCase()
+      );
 
-      await tx.wait();
-      setTimeout(fetchOnChainData, 3000);
-      navigate("/UploadModel");
+      if (alreadyJoined) {
+        const tx = await signer.sendTransaction({
+          to: contract.address,
+          value: ethers.utils.parseEther("1.0"),
+        });
+        await tx.wait();
+        console.log("💰 Prize pool updated for existing participant.");
+      } else {
+        const tx = await contract.joinHackathon(hackathonId, {
+          value: ethers.utils.parseEther("1.0"),
+        });
+        await tx.wait();
+        console.log("✅ Joined and paid.");
+      }
+      console.log("Navigating with hackathonId:", hackathonId);
+      navigate("/UploadModel", {state:{hackathonId}});
     } catch (err) {
       if (err.message.includes("user rejected")) {
         setTxError("Transaction rejected.");

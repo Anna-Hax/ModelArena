@@ -23,6 +23,7 @@ class HackathonStatusView(APIView):
                 time_remaining = None
 
             return Response({
+                "id": hackathon.id, 
                 "title": hackathon.title,
                 "start_time": hackathon.start_time,
                 "duration_minutes": hackathon.duration_minutes,
