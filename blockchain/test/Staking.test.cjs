@@ -12,9 +12,8 @@ describe("Staking", function () {
   beforeEach(async () => {
     [owner, user1, user2] = await ethers.getSigners();
 
-    // Deploy dummy ERC20 token
     const Token = await ethers.getContractFactory("ModelArenaToken");
-    token = await Token.deploy("TestToken", "TTK", ethers.parseEther("1000000"));
+    token = await Token.deploy();
     await token.waitForDeployment();
 
     // Deploy staking contract

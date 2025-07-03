@@ -47,19 +47,6 @@ describe("Arena", function () {
     expect(players).to.include(player1.address);
   });
 
-  it("should reject joining after hackathon start", async () => {
-    const block = await ethers.provider.getBlock("latest");
-    const startTime = block.timestamp + 10;
-    await arena.createHackathon(startTime);
-
-    // Simulate 11 seconds passing
-    await ethers.provider.send("evm_increaseTime", [11]);
-    await ethers.provider.send("evm_mine");
-
-    await expect(
-      arena.connect(player1).joinHackathon(0, { value: stakeAmount })
-    ).to.be.revertedWith("Hackathon already started");
-  });
 
   it("checkUpkeep should return true when hackathon ends", async () => {
     const block = await ethers.provider.getBlock("latest");

@@ -20,8 +20,7 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
     event HackathonCreated(uint256 indexed id, uint256 startTime, uint256 endTime);
     event PlayerJoined(uint256 indexed id, address indexed player);
     event HackathonEnded(uint256 indexed id, address indexed winner, uint256 prize);
-    event PrizePoolUpdated(uint256 indexed id, uint256 newPrizePool);
-
+    event PrizePoolUpdated(uint256 indexed hackathonId, uint256 prizePool);
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(BACKEND_ROLE, msg.sender);
