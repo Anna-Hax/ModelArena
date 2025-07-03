@@ -22,7 +22,7 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
     }
 
     mapping(uint256 => Hackathon) public hackathons;
-
+    event PrizePoolUpdated(uint256 indexed hackathonId, uint256 prizePool);
     event HackathonCreated(uint256 indexed id, uint256 startTime, uint256 endTime);
     event PlayerJoined(uint256 indexed id, address indexed player);
     event HackathonEnded(uint256 indexed id, address indexed winner, uint256 prize);
@@ -72,9 +72,17 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
         return (false, "");
     }
 
-    receive() external payable {
-    // Accepts plain ETH transfers to increase prize pool
+   receive() external payable {
+    if (hackathonCounter > 0) {
+        uint256 currentHackathonId = hackathonCounter - 1;
+        if (!hackathons[currentHackathonId].ended) {
+            hackathons[currentHackathonId].prizePool += msg.value;
+            
+            // Optional: Emit event for tracking
+            emit PrizePoolUpdated(currentHackathonId, hackathons[currentHackathonId].prizePool);
+        }
     }
+}
 
 
     function performUpkeep(bytes calldata performData) external override {

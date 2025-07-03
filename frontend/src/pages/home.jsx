@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { getArenaContract } from "../utils/contract";
 import CountdownTimer from "../components/Counter";
 import { useNavigate } from "react-router-dom";
+import StockChart from "../components/StockChart";
 
 const Home = () => {
   const [models, setModels] = useState([]);
@@ -21,6 +22,7 @@ const Home = () => {
   const [currentHackathonId, setCurrentHackathonId] = useState(null);
   const [hackathonStatus, setHackathonStatus] = useState(null); // ongoing, ended, not_found
   const [isHackathonActive, setIsHackathonActive] = useState(false);
+  const csvData="http://localhost:8000/uploads/input_data_d.csv"
 
   const navigate = useNavigate();
 
@@ -28,9 +30,11 @@ const Home = () => {
   useEffect(() => {
     const fetchHackathonStatus = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/hackathon/status/");
+        const response = await axios.get(
+          "http://localhost:8000/hackathon/status/"
+        );
         console.log("🔍 Hackathon status response:", response.data);
-        
+
         if (response.data.status === "ongoing") {
           setHackathonStatus("ongoing");
           setHackathonTitle(response.data.title);
@@ -78,12 +82,12 @@ const Home = () => {
         );
 
         // Extract only basic model info (uploader and file name)
-        const basicModels = modelsRes.data.results.map(model => ({
+        const basicModels = modelsRes.data.results.map((model) => ({
           uploaded_by: model.uploaded_by,
           model_file: model.model_file,
-          reward_token: model.reward_token || 0
+          reward_token: model.reward_token || 0,
         }));
-        
+
         setModels(basicModels);
       } catch (err) {
         console.error("🔴 Initial data fetch failed:", err);
@@ -101,9 +105,9 @@ const Home = () => {
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = await getArenaContract();
-      
+
       let hackathonId;
-      
+
       // Use hackathon ID from backend if available, otherwise use blockchain counter
       if (currentHackathonId !== null) {
         hackathonId = currentHackathonId;
@@ -114,7 +118,9 @@ const Home = () => {
         setCurrentHackathonId(hackathonId);
       }
 
-      console.log(`📊 Fetching blockchain data for hackathon ID: ${hackathonId}`);
+      console.log(
+        `📊 Fetching blockchain data for hackathon ID: ${hackathonId}`
+      );
 
       if (hackathonId < 0) {
         console.log("No hackathons created yet");
@@ -135,7 +141,7 @@ const Home = () => {
       try {
         // Your contract has hackathons mapping that returns the full struct
         const hackathonDetails = await contract.hackathons(hackathonId);
-        
+
         console.log("🔍 Full hackathon details:", {
           id: hackathonDetails.id?.toString(),
           startTime: hackathonDetails.startTime?.toString(),
@@ -143,18 +149,19 @@ const Home = () => {
           prizePool: hackathonDetails.prizePool?.toString(),
           players: hackathonDetails.players,
           winner: hackathonDetails.winner,
-          ended: hackathonDetails.ended
+          ended: hackathonDetails.ended,
         });
 
         if (hackathonDetails && hackathonDetails.prizePool) {
-          const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+          const prizePoolInEth = ethers.utils.formatEther(
+            hackathonDetails.prizePool
+          );
           setPrizePool(prizePoolInEth);
           console.log(`💰 Prize pool from contract: ${prizePoolInEth} ETH`);
         } else {
           console.log("❌ No prize pool found in hackathon struct");
           setPrizePool("0");
         }
-
       } catch (err) {
         console.error("🔴 Error fetching hackathon details:", err);
         // Fallback to participant count * 1 ETH (minimum expected)
@@ -164,7 +171,6 @@ const Home = () => {
       }
 
       setParticipants(players);
-      
     } catch (err) {
       console.error("🔴 Blockchain fetch failed:", err);
       setError("Failed to fetch blockchain data.");
@@ -196,30 +202,31 @@ const Home = () => {
       const signer = provider.getSigner();
       const contract = await getArenaContract(signer);
 
-      console.log("💰 Sending 1 ETH to contract - will trigger receive() function");
-      
+      console.log(
+        "💰 Sending 1 ETH to contract - will trigger receive() function"
+      );
+
       // Send ETH directly to contract address
       // This will trigger the receive() function which you'll modify to update prize pool
       const tx = await signer.sendTransaction({
         to: contract.address,
         value: ethers.utils.parseEther("1.0"),
-        gasLimit: 100000
+        gasLimit: 100000,
       });
 
       console.log("📤 Transaction sent:", tx.hash);
-      
+
       // Wait for transaction to be mined
       const receipt = await tx.wait();
       console.log("✅ Transaction confirmed:", receipt);
-      
+
       // Refresh blockchain data to show updated prize pool
       setTimeout(() => {
         console.log("🔄 Refreshing blockchain data...");
         fetchOnChainData();
       }, 3000);
-      
+
       navigate("/UploadModel");
-      
     } catch (err) {
       console.error("🔴 Payment failed:", err);
       if (err.message.includes("user rejected")) {
@@ -281,8 +288,8 @@ const Home = () => {
     return (
       <div className="text-center py-8">
         <div className="text-red-600 text-lg mb-4">❌ {error}</div>
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Retry
@@ -296,7 +303,9 @@ const Home = () => {
     return (
       <div className="home-container max-w-4xl mx-auto p-6 text-center">
         <div className="bg-red-50 border border-red-200 rounded-lg p-8">
-          <h2 className="text-3xl font-bold text-red-800 mb-4">🏁 Hackathon Ended</h2>
+          <h2 className="text-3xl font-bold text-red-800 mb-4">
+            🏁 Hackathon Ended
+          </h2>
           <p className="text-xl text-red-700 mb-4">
             The hackathon "{hackathonTitle}" has ended.
           </p>
@@ -312,7 +321,9 @@ const Home = () => {
     return (
       <div className="home-container max-w-4xl mx-auto p-6 text-center">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8">
-          <h2 className="text-3xl font-bold text-yellow-800 mb-4">⏳ No Active Hackathon</h2>
+          <h2 className="text-3xl font-bold text-yellow-800 mb-4">
+            ⏳ No Active Hackathon
+          </h2>
           <p className="text-xl text-yellow-700 mb-4">
             There is no active hackathon running at the moment.
           </p>
@@ -327,18 +338,25 @@ const Home = () => {
   // Active hackathon state
   return (
     <div className="home-container max-w-6xl mx-auto p-6">
-      <h2 className="text-3xl font-bold text-center mb-6">🚀 {hackathonTitle}</h2>
-      
+      <h2 className="text-3xl font-bold text-center mb-6">
+        🚀 {hackathonTitle}
+      </h2>
+
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
         <div className="flex items-center justify-center">
           <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse mr-2"></div>
-          <span className="text-green-800 font-semibold">Hackathon is currently ongoing</span>
+          <span className="text-green-800 font-semibold">
+            Hackathon is currently ongoing
+          </span>
         </div>
         {currentHackathonId !== null && (
           <p className="text-sm text-gray-600 text-center mt-2">
             Hackathon ID: <strong>{currentHackathonId}</strong>
           </p>
         )}
+      </div>
+      <div className="mt-10">
+        <StockChart data={csvData} />
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg mb-6">
@@ -349,7 +367,9 @@ const Home = () => {
           </div>
           <div>
             <p className="text-lg">👥 Participants</p>
-            <p className="text-2xl font-bold text-blue-600">{participants.length}</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {participants.length}
+            </p>
           </div>
         </div>
       </div>
@@ -362,15 +382,17 @@ const Home = () => {
         >
           {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
         </button>
-        
+
         <button
           onClick={handleGetPredictions}
           disabled={isRunningPredictions}
           className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
         >
-          {isRunningPredictions ? "🔄 Running Predictions..." : "📊 Get Predictions"}
+          {isRunningPredictions
+            ? "🔄 Running Predictions..."
+            : "📊 Get Predictions"}
         </button>
-        
+
         {txError && <p className="text-red-600 mt-3">{txError}</p>}
       </div>
 
@@ -390,8 +412,12 @@ const Home = () => {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h4 className="text-xl font-bold text-gray-800">Uploader: {model.uploaded_by}</h4>
-                    <p className="text-gray-600 mt-1"><strong>Model File:</strong> {model.model_file}</p>
+                    <h4 className="text-xl font-bold text-gray-800">
+                      Uploader: {model.uploaded_by}
+                    </h4>
+                    <p className="text-gray-600 mt-1">
+                      <strong>Model File:</strong> {model.model_file}
+                    </p>
                   </div>
                   <div className="text-right">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
@@ -401,37 +427,41 @@ const Home = () => {
                 </div>
 
                 {/* Show predictions only after Get Predictions is clicked */}
-                {showPredictions && model.predictions && predictionStartTime && (
-                  <div className="mt-4 border-t pt-4">
-                    <h5 className="font-semibold text-lg mb-3">🎯 Predictions:</h5>
-                    <div className="space-y-2">
-                      <CountdownTimer
-                        key={`5min-${renderKey}-${index}`}
-                        label="+5 min"
-                        prediction={model.predictions["+5min"]}
-                        actual={model.actual_5}
-                        baseTime={predictionStartTime}
-                        delayMinutes={5}
-                      />
-                      <CountdownTimer
-                        key={`10min-${renderKey}-${index}`}
-                        label="+10 min"
-                        prediction={model.predictions["+10min"]}
-                        actual={model.actual_10}
-                        baseTime={predictionStartTime}
-                        delayMinutes={10}
-                      />
-                      <CountdownTimer
-                        key={`15min-${renderKey}-${index}`}
-                        label="+15 min"
-                        prediction={model.predictions["+15min"]}
-                        actual={model.actual_15}
-                        baseTime={predictionStartTime}
-                        delayMinutes={15}
-                      />
+                {showPredictions &&
+                  model.predictions &&
+                  predictionStartTime && (
+                    <div className="mt-4 border-t pt-4">
+                      <h5 className="font-semibold text-lg mb-3">
+                        🎯 Predictions:
+                      </h5>
+                      <div className="space-y-2">
+                        <CountdownTimer
+                          key={`5min-${renderKey}-${index}`}
+                          label="+5 min"
+                          prediction={model.predictions["+5min"]}
+                          actual={model.actual_5}
+                          baseTime={predictionStartTime}
+                          delayMinutes={5}
+                        />
+                        <CountdownTimer
+                          key={`10min-${renderKey}-${index}`}
+                          label="+10 min"
+                          prediction={model.predictions["+10min"]}
+                          actual={model.actual_10}
+                          baseTime={predictionStartTime}
+                          delayMinutes={10}
+                        />
+                        <CountdownTimer
+                          key={`15min-${renderKey}-${index}`}
+                          label="+15 min"
+                          prediction={model.predictions["+15min"]}
+                          actual={model.actual_15}
+                          baseTime={predictionStartTime}
+                          delayMinutes={15}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             ))}
           </div>

@@ -12,7 +12,7 @@ import JoinHackathon from "./pages/HackathonInfo(blockchain)";
 
 import { UserContextProvider } from "./context/AuthContext";
 import { WalletProvider } from "./context/WalletContext"; // ✅ Correct import
-
+import StockChart from "./components/StockChart.jsx";
 import './App.css';
 
 const App = () => {
@@ -30,7 +30,8 @@ const App = () => {
             <Route path="/wallet" element={<ConnectWallet />} />
             <Route path="/wallet-info" element={<SendEtherPage />} />
             <Route path="/hack-info" element={<HackathonInfo />} />
-             <Route path="/hack-join" element={<JoinHackathon/>} />
+            <Route path="/hack-join" element={<JoinHackathon/>} />
+            <Route path="/stock-info" element={<StockChart/>} />
           </Routes>
         </Router>
       </WalletProvider>
