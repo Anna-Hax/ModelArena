@@ -35,7 +35,7 @@ const ConnectWallet = () => {
   }, [isConnected, address, navigate]);
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] text-white flex items-center justify-center">
+    <div className="w-screen h-screen bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] text-white flex items-center justify-center">
       <div className="bg-purple-700 rounded-xl shadow-lg p-8 w-full max-w-md text-center space-y-6">
         <h2 className="text-3xl font-bold">🔗 Connect Your Wallet</h2>
         <p className="text-sm text-purple-200">

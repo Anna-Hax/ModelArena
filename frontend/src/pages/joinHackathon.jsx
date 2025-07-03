@@ -71,7 +71,7 @@ const JoinHackathon = () => {
   }, [isConnected]);
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] rounded-2xl shadow-[0_0_30px_rgba(128,0,255,0.25)] text-white">
+    <div className="w-screen h-screen bg-gradient-to-b from-[#1e003e] via-[#2d005f] to-[#44007e] rounded-2xl shadow-[0_0_30px_rgba(128,0,255,0.25)] text-white">
       <h1 className="text-3xl font-bold text-center text-purple-300 mb-6">🏁 Join Hackathon</h1>
 
       {!isConnected ? (

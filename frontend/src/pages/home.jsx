@@ -127,6 +127,7 @@ const Home = () => {
       const hackathonId = counter.toNumber()-1;
 
       const players = await contract.getPlayers(hackathonId);
+      const userAddress = await signer.getAddress();
       const alreadyJoined = players.some(
         (addr) => addr.toLowerCase() === userAddress.toLowerCase()
       );
@@ -179,100 +180,233 @@ const Home = () => {
     }
   };
 
-if (loading) return <div className="text-center text-purple-300 mt-20">Loading...</div>;
- if (hackathonStatus === "not_found") {
-  return (
-    <div className="w-screen h-screen bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050]flex items-center justify-center px-4">
-      <div className="bg-[#1a002f] border border-pink-600 rounded-xl p-10 max-w-md text-center shadow-lg neon-border">
-        <h2 className="text-3xl font-bold text-pink-400 mb-4">⚠️ No Active Hackathon</h2>
-        <p className="text-gray-300 text-md mb-6">
-          There are currently no hackathons live right now.
-        </p>
-        
-      </div>
-    </div>
-  );
-}
-
-  return (
-    <div className="w-screen h-screen bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] text-white px-6 py-10 font-mono">
-      <h2 className="text-4xl font-bold text-center text-purple-400 mb-8 neon-text">🚀 {hackathonTitle}</h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-10">
-        <div className="bg-gradient-to-br from-purple-800 to-indigo-900 p-6 rounded-xl shadow-lg text-center">
-          <h4 className="text-xl font-bold mb-2 text-white">🏆 Prize Pool</h4>
-          <p className="text-2xl text-emerald-400">{prizePool} ETH</p>
-        </div>
-        <div className="bg-gradient-to-br from-pink-700 to-purple-800 p-6 rounded-xl shadow-lg text-center">
-          <h4 className="text-xl font-bold mb-2 text-white">👥 Participants</h4>
-          <p className="text-2xl text-blue-300">{participants.length}</p>
+  if (loading) {
+    return (
+      <div className="h-screen w-screen pt-20 bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-300 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-purple-300 text-lg">Loading hackathon...</p>
         </div>
       </div>
+    );
+  }
 
-      <div className="text-center mb-12">
-        <button
-          onClick={handleUploadModelPayment}
-          disabled={isUploading}
-          className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg mr-4 shadow-xl transition"
-        >
-          {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
-        </button>
-        <button
-          onClick={handleGetPredictions}
-          disabled={isRunningPredictions}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-xl transition"
-        >
-          {isRunningPredictions ? "🔄 Running..." : "📊 Get Predictions"}
-        </button>
-        {txError && <p className="text-red-400 mt-4">{txError}</p>}
-      </div>
-
-      <div className="max-w-6xl mx-auto">
-        <h3 className="text-2xl font-bold text-purple-300 mb-6">📈 Submitted Models</h3>
-
-        {models.length === 0 ? (
-          <p className="text-gray-400 text-center">No models submitted yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {models.map((model, index) => (
-              <div key={index} className="bg-[#1e0033] border border-purple-700 p-5 rounded-xl shadow-md">
-                <h4 className="text-xl font-bold text-purple-200">Uploader: {model.uploaded_by}</h4>
-                <p className="text-gray-400 mt-1">📦 {model.model_file}</p>
-                <p className="text-yellow-400 font-semibold mt-2">🏆 {model.reward_token} Tokens</p>
-
-                {showPredictions && model.predictions && predictionStartTime && (
-                  <div className="mt-4">
-                    <h5 className="text-lg text-white font-semibold mb-2">🎯 Predictions</h5>
-                    <CountdownTimer
-                      key={`5min-${renderKey}-${index}`}
-                      label="+5 min"
-                      prediction={model.predictions["+5min"]}
-                      actual={model.actual_5}
-                      baseTime={predictionStartTime}
-                      delayMinutes={5}
-                    />
-                    <CountdownTimer
-                      key={`10min-${renderKey}-${index}`}
-                      label="+10 min"
-                      prediction={model.predictions["+10min"]}
-                      actual={model.actual_10}
-                      baseTime={predictionStartTime}
-                      delayMinutes={10}
-                    />
-                    <CountdownTimer
-                      key={`15min-${renderKey}-${index}`}
-                      label="+15 min"
-                      prediction={model.predictions["+15min"]}
-                      actual={model.actual_15}
-                      baseTime={predictionStartTime}
-                      delayMinutes={15}
-                    />
-                  </div>
-                )}
+  if (hackathonStatus === "not_found") {
+    return (
+      <div className="h-screen w-screen pt-20 bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] flex items-center justify-center px-4">
+        <div className="max-w-md w-full">
+          <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur-xl border border-pink-500/30 rounded-2xl p-8 text-center shadow-2xl">
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
               </div>
-            ))}
+              <h2 className="text-3xl font-bold text-white mb-2">No Active Hackathon</h2>
+              <p className="text-purple-300 text-lg">
+                There are currently no hackathons running. Check back later for exciting competitions!
+              </p>
+            </div>
+            <div className="pt-4 border-t border-purple-500/20">
+              <p className="text-purple-400 text-sm">
+                Want to be notified when new hackathons start? Join our community!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-max w-screen pt-20 bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-200 to-pink-200 bg-clip-text text-transparent">
+              {hackathonTitle}
+            </h1>
+          </div>
+          <p className="text-purple-300 text-lg max-w-2xl mx-auto">
+            Compete with ML models and win ETH rewards in this live hackathon
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-xl border border-purple-400/20 rounded-2xl p-6 text-center shadow-xl">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-purple-200">Prize Pool</h3>
+            <p className="text-3xl font-bold text-yellow-400">{prizePool} ETH</p>
+            <p className="text-purple-400 text-sm mt-2">Total rewards available</p>
+          </div>
+          
+          <div className="bg-gradient-to-br from-pink-600/20 to-pink-800/20 backdrop-blur-xl border border-pink-400/20 rounded-2xl p-6 text-center shadow-xl">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-pink-200">Participants</h3>
+            <p className="text-3xl font-bold text-blue-400">{participants.length}</p>
+            <p className="text-pink-400 text-sm mt-2">Active competitors</p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <button
+            onClick={handleUploadModelPayment}
+            disabled={isUploading}
+            className="group relative px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <div className="flex items-center justify-center gap-2">
+              {isUploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <span>Upload Model</span>
+                  <span className="text-yellow-300 font-bold">(1 ETH)</span>
+                </>
+              )}
+            </div>
+          </button>
+          
+          <button
+            onClick={handleGetPredictions}
+            disabled={isRunningPredictions}
+            className="group relative px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <div className="flex items-center justify-center gap-2">
+              {isRunningPredictions ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <span>Running...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Get Predictions</span>
+                </>
+              )}
+            </div>
+          </button>
+        </div>
+
+        {/* Error Display */}
+        {txError && (
+          <div className="max-w-md mx-auto mb-8">
+            <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <p className="text-red-300">{txError}</p>
+              </div>
+            </div>
           </div>
         )}
+
+        {/* Models Section */}
+        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl border border-purple-400/20 rounded-2xl p-8 shadow-2xl">
+          <h2 className="text-3xl font-bold text-purple-200 mb-8 text-center">Submitted Models</h2>
+
+          {models.length === 0 ? (
+            <div className="text-center py-12">
+              <svg className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-purple-300 mb-2">No Models Yet</h3>
+              <p className="text-purple-400">Be the first to upload a model and compete!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {models.map((model, index) => (
+                <div key={index} className="bg-gradient-to-br from-purple-800/20 to-pink-800/20 backdrop-blur-sm border border-purple-400/30 rounded-xl p-6 hover:border-purple-400/50 transition-all duration-300 shadow-lg">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                        {model.uploaded_by.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-purple-200">{model.uploaded_by}</h3>
+                        <p className="text-purple-400 text-sm truncate max-w-xs">{model.model_file}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-yellow-400 font-bold">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                        </svg>
+                        <span>{model.reward_token}</span>
+                      </div>
+                      <p className="text-purple-400 text-xs">Tokens</p>
+                    </div>
+                  </div>
+
+                  {showPredictions && model.predictions && predictionStartTime && (
+                    <div className="mt-6 pt-4 border-t border-purple-400/20">
+                      <h4 className="text-lg font-semibold text-purple-200 mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Live Predictions
+                      </h4>
+                      <div className="space-y-3">
+                        <CountdownTimer
+                          key={`5min-${renderKey}-${index}`}
+                          label="+5 min"
+                          prediction={model.predictions["+5min"]}
+                          actual={model.actual_5}
+                          baseTime={predictionStartTime}
+                          delayMinutes={5}
+                        />
+                        <CountdownTimer
+                          key={`10min-${renderKey}-${index}`}
+                          label="+10 min"
+                          prediction={model.predictions["+10min"]}
+                          actual={model.actual_10}
+                          baseTime={predictionStartTime}
+                          delayMinutes={10}
+                        />
+                        <CountdownTimer
+                          key={`15min-${renderKey}-${index}`}
+                          label="+15 min"
+                          prediction={model.predictions["+15min"]}
+                          actual={model.actual_15}
+                          baseTime={predictionStartTime}
+                          delayMinutes={15}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
