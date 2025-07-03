@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
-import axios from "axios";
+//import axios from "axios";
 
 const RequireWallet = () => {
   const navigate = useNavigate();
@@ -12,12 +12,12 @@ const RequireWallet = () => {
       return;
     }
 
-    axios.get("http://localhost:8000/auth/check_wallet/", {
-      headers: { Authorization: `Bearer ${access}` },
-    }).catch(() => navigate("/wallet"));
-  }, [navigate]);
-
+    const wallet = localStorage.getItem('wallet_connect');
+      if (wallet == false){
+        navigate('/wallet')
+      }
   //return <Outlet />; 
-};
+    })
+}
 
 export default RequireWallet;

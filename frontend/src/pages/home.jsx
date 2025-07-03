@@ -11,6 +11,7 @@ const Home = () => {
   const [participants, setParticipants] = useState([]);
   const [prizePool, setPrizePool] = useState("0");
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [txError, setTxError] = useState("");
@@ -44,7 +45,7 @@ const Home = () => {
           setIsHackathonActive(false);
         }
       } catch (err) {
-        setError("Failed to fetch hackathon status.");
+        setError("Failed to fetch hackathon status.", err);
         setHackathonStatus("not_found");
         setIsHackathonActive(false);
       }

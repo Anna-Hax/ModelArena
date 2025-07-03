@@ -33,7 +33,7 @@ const HackathonInfo = () => {
         {new Date(Number(hackathon.endTime) * 1000).toLocaleString()}
       </p>
       <p>
-        Prize Pool: {ethers.formatEther(hackathon.prizePool.toString())} ETH
+        Prize Pool: {ethers.utils.formatEther(hackathon.prizePool.toString())} ETH
       </p>
     </div>
   );
