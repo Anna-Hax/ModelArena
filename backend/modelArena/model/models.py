@@ -6,3 +6,4 @@ from django.contrib.auth.models import User
 class AiModel(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     model = models.FileField(upload_to='uploads/')
+    wallet_address = models.CharField()

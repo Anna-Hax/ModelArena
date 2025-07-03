@@ -13,8 +13,15 @@ contract Staking is Ownable(msg.sender), ReentrancyGuard {
     mapping(address => bool) public hasEntered;
     mapping(address => uint256) public modelStakes;
 
+    // Investor data: investor => hackathonId => (model => amount)
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public bets;
+
+    // Total bets per model per hackathon
+    mapping(uint256 => mapping(address => uint256)) public totalBetsOnModel;
+
     event EnteredPlatform(address indexed user, uint256 amount);
     event ModelStaked(address indexed user, uint256 amount);
+    event BetPlaced(address indexed investor, uint256 indexed hackathonId, address indexed model, uint256 amount);
 
     constructor(address _token, uint256 _entryStake, uint256 _minModelStake) {
         token = IERC20(_token);
@@ -46,8 +53,29 @@ contract Staking is Ownable(msg.sender), ReentrancyGuard {
         emit ModelStaked(msg.sender, amount);
     }
 
-    // Optional read utils
+    function placeBet(uint256 hackathonId, address modelOwner, uint256 amount) external nonReentrant {
+        require(hasEntered[msg.sender], "Investor must enter platform first");
+        require(hasEntered[modelOwner], "Model must exist on platform");
+        require(amount > 0, "Bet amount must be positive");
+
+        bets[msg.sender][hackathonId][modelOwner] += amount;
+        totalBetsOnModel[hackathonId][modelOwner] += amount;
+
+        bool success = token.transferFrom(msg.sender, address(this), amount);
+        require(success, "Transfer failed");
+
+        emit BetPlaced(msg.sender, hackathonId, modelOwner, amount);
+    }
+
     function totalStakeOf(address user) external view returns (uint256) {
         return hasEntered[user] ? entryStakeAmount + modelStakes[user] : 0;
+    }
+
+    function getBet(address investor, uint256 hackathonId, address model) external view returns (uint256) {
+        return bets[investor][hackathonId][model];
+    }
+
+    function getTotalBetsOnModel(uint256 hackathonId, address model) external view returns (uint256) {
+        return totalBetsOnModel[hackathonId][model];
     }
 }
