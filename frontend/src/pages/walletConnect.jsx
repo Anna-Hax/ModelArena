@@ -22,7 +22,7 @@ const ConnectWallet = () => {
               },
             }
           );
-          localStorage.setItem('wallet_connect', true)
+          localStorage.setItem("wallet_connect", "true");
           console.log("✅ Wallet address saved:", res.data);
           navigate("/home");
         } catch (err) {
