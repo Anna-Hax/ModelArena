@@ -182,7 +182,7 @@ const Home = () => {
 if (loading) return <div className="text-center text-purple-300 mt-20">Loading...</div>;
  if (hackathonStatus === "not_found") {
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-[#120024] via-[#1c003a] to-[#240050] flex items-center justify-center px-4">
+    <div className="w-screen h-screen bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050]flex items-center justify-center px-4">
       <div className="bg-[#1a002f] border border-pink-600 rounded-xl p-10 max-w-md text-center shadow-lg neon-border">
         <h2 className="text-3xl font-bold text-pink-400 mb-4">⚠️ No Active Hackathon</h2>
         <p className="text-gray-300 text-md mb-6">
@@ -195,7 +195,7 @@ if (loading) return <div className="text-center text-purple-300 mt-20">Loading..
 }
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-[#120024] via-[#1c003a] to-[#240050] text-white px-6 py-10 font-mono">
+    <div className="w-screen h-screen bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] text-white px-6 py-10 font-mono">
       <h2 className="text-4xl font-bold text-center text-purple-400 mb-8 neon-text">🚀 {hackathonTitle}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-10">

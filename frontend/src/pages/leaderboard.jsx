@@ -19,8 +19,8 @@ const Leaderboard = () => {
   }, []);
 
   return (
-    <div className="w-screen h-screen px-6 py-10 bg-gradient-to-b from-[#1f0036] to-[#0e0a20] text-white font-sans">
-      <div className="max-w-5xl mx-auto bg-gradient-to-r from-[#2b0d52] to-[#1c0f45] p-8 rounded-2xl shadow-xl border border-purple-800">
+    <div className="w-screen h-screen px-6 py-10 bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] text-white font-sans">
+      <div className="max-w-5xl mx-auto bg-gradient-to-rfrom-[#28014e] via-[#72119f] to-[#240050] p-8 rounded-2xl shadow-xl border border-purple-800">
         <h1 className="text-3xl font-bold text-purple-300 mb-6 text-center tracking-wide">
           📊 Model Leaderboard
         </h1>
