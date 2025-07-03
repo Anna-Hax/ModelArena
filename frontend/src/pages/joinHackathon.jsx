@@ -11,6 +11,7 @@ const JoinHackathon = () => {
   const [error, setError] = useState("");
   const [txProcessing, setTxProcessing] = useState(false);
 
+  // eslint-disable-next-line no-unused-vars
   const { address, isConnected, connectWallet } = useWallet();
 
   const fetchLatestHackathonInfo = async () => {

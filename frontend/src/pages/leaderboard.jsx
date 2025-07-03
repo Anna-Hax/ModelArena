@@ -19,35 +19,52 @@ const Leaderboard = () => {
   }, []);
 
   return (
-    <div className="leaderboard-container">
-      <h1 className="leaderboard-title">📊 Model Leaderboard</h1>
+    <div className="w-screen h-screen px-6 py-10 bg-gradient-to-b from-[#1f0036] to-[#0e0a20] text-white font-sans">
+      <div className="max-w-5xl mx-auto bg-gradient-to-r from-[#2b0d52] to-[#1c0f45] p-8 rounded-2xl shadow-xl border border-purple-800">
+        <h1 className="text-3xl font-bold text-purple-300 mb-6 text-center tracking-wide">
+          📊 Model Leaderboard
+        </h1>
 
-      {loading ? (
-        <p className="leaderboard-status">Loading...</p>
-      ) : data.length === 0 ? (
-        <p className="leaderboard-status">No results available yet.</p>
-      ) : (
-        <table className="leaderboard-table">
-          <thead>
-            <tr>
-              <th>🏅 Rank</th>
-              <th>Model</th>
-              <th>Uploader</th>
-              <th>Avg Error</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((entry, idx) => (
-              <tr key={idx}>
-                <td>{entry.rank}</td>
-                <td>{entry.model_file}</td>
-                <td>{entry.uploaded_by}</td>
-                <td>{entry.average_error.toFixed(3)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        {loading ? (
+          <p className="text-center text-purple-400 animate-pulse">Loading...</p>
+        ) : data.length === 0 ? (
+          <p className="text-center text-purple-400">No results available yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-purple-900 bg-opacity-30 text-purple-200 uppercase text-sm">
+                  <th className="py-3 px-4">🏅 Rank</th>
+                  <th className="py-3 px-4">Model</th>
+                  <th className="py-3 px-4">Uploader</th>
+                  <th className="py-3 px-4">Avg Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((entry, idx) => (
+                  <tr
+                    key={idx}
+                    className={`transition-all duration-200 hover:bg-purple-700 hover:bg-opacity-20 ${
+                      entry.rank === 1
+                        ? "bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 text-black font-semibold"
+                        : entry.rank === 2
+                        ? "bg-gradient-to-r from-gray-500 to-gray-600 text-white"
+                        : entry.rank === 3
+                        ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white"
+                        : "text-purple-100"
+                    }`}
+                  >
+                    <td className="py-3 px-4">{entry.rank}</td>
+                    <td className="py-3 px-4">{entry.model_file}</td>
+                    <td className="py-3 px-4">{entry.uploaded_by}</td>
+                    <td className="py-3 px-4">{entry.average_error.toFixed(3)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
