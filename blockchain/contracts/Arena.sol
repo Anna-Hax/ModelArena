@@ -72,6 +72,11 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
         return (false, "");
     }
 
+    receive() external payable {
+    // Accepts plain ETH transfers to increase prize pool
+    }
+
+
     function performUpkeep(bytes calldata performData) external override {
         uint256 hackathonId = abi.decode(performData, (uint256));
         require(!hackathons[hackathonId].ended, "Already ended");

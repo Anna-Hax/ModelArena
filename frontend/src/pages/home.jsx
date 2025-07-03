@@ -3,6 +3,7 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { getArenaContract } from "../utils/contract";
 import CountdownTimer from "../components/Counter";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const [models, setModels] = useState([]);
@@ -11,6 +12,8 @@ const Home = () => {
   const [prizePool, setPrizePool] = useState("0");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [txError, setTxError] = useState("");
 
   useEffect(() => {
     const fetchBackendData = async () => {
@@ -40,6 +43,7 @@ const Home = () => {
   useEffect(() => {
     const fetchOnChainData = async () => {
       try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
         const contract = await getArenaContract();
 
         const counter = await contract.hackathonCounter();
@@ -51,10 +55,10 @@ const Home = () => {
         }
 
         const players = await contract.getPlayers(currentHackathonId);
-        const hackathon = await contract.hackathons(currentHackathonId);
+        const contractBalance = await provider.getBalance(contract.address);
 
         setParticipants(players);
-        setPrizePool(ethers.utils.formatEther(hackathon.prizePool));
+        setPrizePool(ethers.utils.formatEther(contractBalance));
       } catch (err) {
         console.error("🔴 Blockchain fetch failed:", err);
         setError("Failed to fetch blockchain data.");
@@ -65,10 +69,48 @@ const Home = () => {
 
     fetchOnChainData();
 
-    // Optional: refetch every 15s for real-time updates
     const interval = setInterval(fetchOnChainData, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  const navigate = useNavigate();
+
+  const handleUploadModelPayment = async () => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      const contract = await getArenaContract(signer);
+      const counter = await contract.hackathonCounter();
+      const hackathonId = counter.toNumber() - 1;
+
+      const players = await contract.getPlayers(hackathonId);
+      const alreadyJoined = players.some(
+        (addr) => addr.toLowerCase() === userAddress.toLowerCase()
+      );
+
+      if (alreadyJoined) {
+        const tx = await signer.sendTransaction({
+          to: contract.address,
+          value: ethers.utils.parseEther("1.0")
+        });
+        await tx.wait();
+        console.log("💰 Prize pool updated for existing participant.");
+      } else {
+        const tx = await contract.joinHackathon(hackathonId, {
+          value: ethers.utils.parseEther("1.0")
+        });
+        await tx.wait();
+        console.log("✅ Joined and paid.");
+      }
+
+      navigate("/UploadModel");
+    } catch (err) {
+      console.error("Join/Pay failed:", err);
+      alert("❌ Something went wrong. Check console.");
+    }
+  };
 
   if (loading) return <div>⏳ Loading predictions...</div>;
   if (error) return <div>❌ {error}</div>;
@@ -80,6 +122,17 @@ const Home = () => {
       <div className="text-md text-gray-700 mb-4">
         <p>🏆 Prize Pool: <strong>{prizePool} ETH</strong></p>
         <p>👥 Participants: <strong>{participants.length}</strong></p>
+      </div>
+
+      <div className="mb-4">
+        <button
+          onClick={handleUploadModelPayment}
+          disabled={isUploading}
+          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded"
+        >
+          {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
+        </button>
+        {txError && <p className="text-red-600 mt-2">{txError}</p>}
       </div>
 
       <h3 className="text-xl font-semibold mt-4">📊 Model Predictions</h3>
