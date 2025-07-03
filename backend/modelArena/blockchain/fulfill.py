@@ -99,7 +99,7 @@ async def handle_perform_upkeep(tx_hash):
         encoded_data = input_data[10:]
         hackathon_id = int.from_bytes(bytes.fromhex(encoded_data[:64]), byteorder='big')
         original_id = hackathon_id
-        hackathon_id = hackathon_id % 8192  # Normalize ID
+        print(f"ℹ️ Extracted Hackathon ID from tx input: {hackathon_id}")
         
         print(f"ℹ️ Raw ID: {original_id} | Normalized ID: {hackathon_id}")
         
@@ -159,10 +159,11 @@ async def monitor_blockchain():
 
 # --- Entry Point ---
 if __name__ == "__main__":
-    try:
-        asyncio.run(monitor_blockchain())
-    except KeyboardInterrupt:
-        print("\n🛑 Script stopped by user")
-    except Exception as e:
-        print(f"❌ Fatal error: {str(e)}")
-        sys.exit(1)
+    # Manual test block
+    username, wallet, hid = asyncio.run(get_winner_wallet(0))  # replace 0 with your real blockchain ID
+    if wallet:
+        print(f"🏁 Triggering fulfill() with wallet {wallet} for hackathon {hid}")
+        tx_hash = fulfill_winner(hid, wallet)
+        print("🎉 Fulfill tx sent:", tx_hash)
+    else:
+        print("❌ Could not find wallet. Ensure prediction & profile setup.")

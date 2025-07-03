@@ -9,6 +9,7 @@ class AiModel(models.Model):
     model = models.FileField(upload_to='uploads/models/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     reward_token = models.IntegerField(default=0)  # New field for reward tokens
+    hackathon = models.ForeignKey(HackathonConfig, on_delete=models.CASCADE) 
     
     def __str__(self):
         return f"{self.user.username} - {self.model.name}"

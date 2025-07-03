@@ -90,7 +90,7 @@ const Home = () => {
 
       const contract = await getArenaContract(signer);
       const counter = await contract.hackathonCounter();
-      const hackathonId = counter.toNumber() - 1;
+      const hackathonId = counter.toNumber()-1;
 
       const players = await contract.getPlayers(hackathonId);
       const alreadyJoined = players.some(
@@ -111,8 +111,8 @@ const Home = () => {
         await tx.wait();
         console.log("✅ Joined and paid.");
       }
-
-      navigate("/UploadModel");
+      console.log("Navigating with hackathonId:", hackathonId);
+      navigate("/UploadModel", {state:{hackathonId}});
     } catch (err) {
       console.error("Join/Pay failed:", err);
       alert("❌ Something went wrong. Check console.");

@@ -64,67 +64,85 @@
 
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Add this line
+import { useNavigate, useLocation } from "react-router-dom";
 
 const ModelUpload = () => {
-    const [file, setFile] = useState(null);
-    const access = localStorage.getItem("access");
-    const navigate = useNavigate(); // ✅ Add this line
+  const [file, setFile] = useState(null);
+  const access = localStorage.getItem("access");
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const handleFileChange = (e) => {
-        setFile(e.target.files[0]);
-    };
+  const hackathonId = location.state?.hackathonId;
 
-    const handleUpload = async () => {
-        if (!file) {
-            alert("Please select a file to upload.");
-            return;
-        }
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
 
-        const formData = new FormData();
-        formData.append("model", file); // Must match the name in serializer
+  const handleUpload = async () => {
+    if (!file) {
+      alert("Please select a file to upload.");
+      return;
+    }
 
-        try {
-            const response = await fetch("http://localhost:8000/model/", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${access}`,
-                    // ✅ Don't set Content-Type manually for FormData
-                },
-                body: formData,
-            });
+    if (!hackathonId && hackathonId !== 0) {
+      alert("Missing hackathon ID.");
+      return;
+    }
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Upload failed: ${response.status} ${errorText}`);
-            }
+    const formData = new FormData();
+    formData.append("model", file); // backend expects this key
+    formData.append("hackathon", hackathonId); // send hackathon ID
 
-            const data = await response.json();
-            console.log("Upload success:", data);
-            navigate('/home'); // ✅ Redirect after upload
-        } catch (error) {
-            console.error("Error during upload:", error);
-            alert("Upload failed.");
-        }
-    };
+    try {
+      console.log("Uploading with hackathonId:", hackathonId);
+      const response = await fetch("http://localhost:8000/model/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${access}`,
+          // DO NOT set Content-Type manually for FormData
+        },
+        body: formData,
+      });
 
-    return (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100vw" }}>
-            <h2>Upload Your Strategy Model</h2>
-            <input
-                type="file"
-                accept=".zip,.py"
-                onChange={handleFileChange}
-                style={{ width: "50%", padding: "8px", marginBottom: "10px" }}
-            />
-            <button
-                style={{ width: "50%", padding: "8px", marginBottom: "10px" }}
-                onClick={handleUpload}
-            >
-                Upload Model
-            </button>
-        </div>
-    );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Upload success:", data);
+      navigate("/home");
+    } catch (error) {
+      console.error("❌ Error during upload:", error);
+      alert("Upload failed.");
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100vw",
+      }}
+    >
+      <h2>Upload Your Strategy Model</h2>
+      <input
+        type="file"
+        accept=".zip,.py"
+        onChange={handleFileChange}
+        style={{ width: "50%", padding: "8px", marginBottom: "10px" }}
+      />
+      <button
+        style={{ width: "50%", padding: "8px", marginBottom: "10px" }}
+        onClick={handleUpload}
+      >
+        Upload Model
+      </button>
+    </div>
+  );
 };
 
 export default ModelUpload;
