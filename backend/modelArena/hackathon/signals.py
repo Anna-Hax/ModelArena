@@ -17,11 +17,17 @@ def sync_to_blockchain(sender, instance, created, **kwargs):
             receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
 
             logs = contract.events.HackathonCreated().process_receipt(receipt)
-            onchain_id = logs[0]['args']['id']
 
+            if not logs:
+                print("❌ No HackathonCreated event found in transaction receipt.")
+                print("🔍 Receipt:", receipt)
+                return  # don't crash, just exit
+
+            onchain_id = logs[0]['args']['id']
             instance.blockchain_id = onchain_id
             instance.save(update_fields=["blockchain_id"])
             print(f"✅ Blockchain hackathon created with ID {onchain_id}")
 
         except Exception as e:
             print(f"❌ Failed to sync hackathon to blockchain:", e)
+
