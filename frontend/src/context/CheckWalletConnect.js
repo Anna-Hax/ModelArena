@@ -1,9 +1,8 @@
-// components/RequireAuth.jsx
 import { useEffect } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
 import axios from "axios";
 
-const RequireAuth = () => {
+const RequireWallet = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,12 +12,12 @@ const RequireAuth = () => {
       return;
     }
 
-    axios.get("http://localhost:8000/auth/get_user/", {
+    axios.get("http://localhost:8000/auth/check_wallet/", {
       headers: { Authorization: `Bearer ${access}` },
-    }).catch(() => navigate("/login"));
+    }).catch(() => navigate("/wallet"));
   }, [navigate]);
 
-  return <Outlet />; 
+  //return <Outlet />; 
 };
 
-export default RequireAuth;
+export default RequireWallet;

@@ -9,32 +9,35 @@ import ConnectWallet from "./pages/walletConnect";
 import SendEtherPage from './pages/walletinfo';
 import HackathonInfo from "./pages/HackathonInfo(blockchain)";
 import JoinHackathon from "./pages/HackathonInfo(blockchain)";
-
-import { UserContextProvider } from "./context/AuthContext";
+import RequireAuth from "./context/AuthContext";
 import { WalletProvider } from "./context/WalletContext"; // ✅ Correct import
 
 import './App.css';
 
 const App = () => {
   return (
-    <UserContextProvider>
-      <WalletProvider> {/* ✅ FIXED: Use correct context provider */}
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+    <WalletProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          <Route element={<RequireAuth />}>
+
+            <Route path="/wallet" element={<ConnectWallet />} />
             <Route path="/UploadModel" element={<ModelUpload />} />
             <Route path="/home" element={<Home />} />
             <Route path="/landing" element={<Hackathonlanding />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/wallet" element={<ConnectWallet />} />
+            
             <Route path="/wallet-info" element={<SendEtherPage />} />
             <Route path="/hack-info" element={<HackathonInfo />} />
-             <Route path="/hack-join" element={<JoinHackathon/>} />
-          </Routes>
-        </Router>
-      </WalletProvider>
-    </UserContextProvider>
+            <Route path="/hack-join" element={<JoinHackathon />} />
+          </Route>
+        </Routes>
+      </Router>
+    </WalletProvider>
+
   );
 };
 

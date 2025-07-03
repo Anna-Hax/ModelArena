@@ -23,7 +23,7 @@ const Home = () => {
   const [isHackathonActive, setIsHackathonActive] = useState(false);
 
   const navigate = useNavigate();
-
+  
   useEffect(() => {
     const fetchHackathonStatus = async () => {
       try {

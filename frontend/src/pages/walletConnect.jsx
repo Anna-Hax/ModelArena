@@ -6,7 +6,7 @@ import axios from 'axios';
 const ConnectWallet = () => {
   const navigate = useNavigate();
   const { connectWallet, disconnectWallet, address, isConnected } = useWallet();
-
+  localStorage.setItem('wallet_connect', false)
   useEffect(() => {
     const postWallet = async () => {
       if (isConnected && address) {
@@ -22,6 +22,7 @@ const ConnectWallet = () => {
               },
             }
           );
+          localStorage.setItem('wallet_connect', true)
           console.log("✅ Wallet address saved:", res.data);
           navigate("/home");
         } catch (err) {

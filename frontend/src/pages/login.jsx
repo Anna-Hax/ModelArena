@@ -17,6 +17,7 @@ const Login = () => {
       const { access, refresh } = res.data;
       localStorage.setItem("access", access);
       localStorage.setItem("refresh", refresh);
+      localStorage.setItem('wallet connect', false)
       navigate("/home");
     } catch (error) {
       console.error("Login failed:", error);
@@ -38,12 +39,12 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="username" className="block mb-1 text-sm text-gray-300">
-              Email Address
+              Username
             </label>
             <input
               type="text"
               name="username"
-              placeholder="Enter your email"
+              placeholder="Enter your username"
               value={form.username}
               onChange={handleChange}
               className="w-full px-5 py-3 rounded-lg bg-[#292943] text-white placeholder-gray-400 border border-[#444] focus:outline-none focus:ring-2 focus:ring-purple-500"
