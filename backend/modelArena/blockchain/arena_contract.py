@@ -3,7 +3,7 @@ from .web3_config import web3, account, CHAIN_ID, PUBLIC_ADDRESS
 from .arena_abi import arena_abi
 from eth_abi import encode 
 
-ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512")
 
 contract = web3.eth.contract(address=ARENA_CONTRACT_ADDRESS, abi=arena_abi)
 

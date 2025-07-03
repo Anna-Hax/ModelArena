@@ -145,6 +145,25 @@ arena_abi = [
       "inputs": [
         {
           "indexed": True,
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "indexed": False,
+          "internalType": "uint256",
+          "name": "newPrizePool",
+          "type": "uint256"
+        }
+      ],
+      "name": "PrizePoolUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": False,
+      "inputs": [
+        {
+          "indexed": True,
           "internalType": "bytes32",
           "name": "role",
           "type": "bytes32"
