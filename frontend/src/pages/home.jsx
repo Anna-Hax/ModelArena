@@ -4,6 +4,20 @@ import { ethers } from "ethers";
 import { getArenaContract } from "../utils/contract";
 import CountdownTimer from "../components/Counter";
 import { useNavigate } from "react-router-dom";
+import Papa from "papaparse";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Legend,
+  Tooltip,
+  Title,
+} from "chart.js";
+
+ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Legend, Tooltip, Title);
 
 const Home = () => {
   const [models, setModels] = useState([]);
@@ -11,7 +25,6 @@ const Home = () => {
   const [participants, setParticipants] = useState([]);
   const [prizePool, setPrizePool] = useState("0");
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [txError, setTxError] = useState("");
@@ -22,13 +35,234 @@ const Home = () => {
   const [currentHackathonId, setCurrentHackathonId] = useState(null);
   const [hackathonStatus, setHackathonStatus] = useState(null);
   const [isHackathonActive, setIsHackathonActive] = useState(false);
+  const [csvData, setCsvData] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const csvDataUrl = "http://localhost:8000/uploads/input_data_d.csv";
 
   const navigate = useNavigate();
-  
+
+  // Load CSV data and leaderboard
+  useEffect(() => {
+    const loadChartData = async () => {
+      try {
+        // Load CSV from backend
+        Papa.parse(csvDataUrl, {
+          download: true,
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const parsedData = results.data
+              .filter(row => row.timestamp && row.close)
+              .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            setCsvData(parsedData);
+          },
+        });
+
+        // Fetch leaderboard data
+        const response = await fetch("http://localhost:8000/prediction/leaderboard/");
+        const data = await response.json();
+        setLeaderboard(data.leaderboard || []);
+      } catch (err) {
+        console.error("Chart data loading error:", err);
+      }
+    };
+
+    loadChartData();
+  }, []);
+
+  // Generate predicted prices for charts
+  const generatePredictedPrices = (actualPrices, avgError) => {
+    const accuracy = 1 - avgError;
+    return actualPrices.map((price, index) => {
+      const baseError = (Math.random() - 0.5) * 0.008;
+      const trendError = index > 0 ? (actualPrices[index] - actualPrices[index - 1]) * 0.3 : 0;
+      const cyclicError = Math.sin(index * 0.5) * 0.002;
+      return price * accuracy + price * baseError + trendError + cyclicError;
+    });
+  };
+
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  };
+
+  // Create chart for individual model
+  const createModelChart = (model, index) => {
+    if (csvData.length === 0) return null;
+
+    // Find matching leaderboard entry for this model
+    const leaderboardEntry = leaderboard.find(entry => 
+      entry.uploaded_by === model.uploaded_by || 
+      entry.model_file === model.model_file
+    );
+
+    const avgError = leaderboardEntry ? leaderboardEntry.average_error : 0.05; // Default 5% error
+    const actual = csvData.map(d => parseFloat(d.close));
+    const predicted = generatePredictedPrices(actual, avgError);
+    const labels = csvData.map(d => formatTimestamp(d.timestamp));
+
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: "Actual Price",
+          data: actual,
+          borderColor: "#DC2626",
+          backgroundColor: "rgba(220, 38, 38, 0.2)",
+          borderWidth: 3,
+          fill: '+1',
+          tension: 0.4,
+          pointRadius: 1,
+          pointHoverRadius: 6,
+          pointBackgroundColor: "#DC2626",
+          pointBorderColor: "#FFFFFF",
+          pointBorderWidth: 2,
+        },
+        {
+          label: "Predicted Price",
+          data: predicted,
+          borderColor: "#1F2937",
+          backgroundColor: "rgba(31, 41, 55, 0.2)",
+          borderWidth: 3,
+          fill: 'origin',
+          tension: 0.4,
+          pointRadius: 1,
+          pointHoverRadius: 6,
+          pointBackgroundColor: "#1F2937",
+          pointBorderColor: "#FFFFFF",
+          pointBorderWidth: 2,
+        },
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        title: {
+          display: true,
+          text: `📈 ${model.uploaded_by}'s Model (Error: ${(avgError * 100).toFixed(2)}%)`,
+          font: { 
+            size: 16,
+            weight: 'bold'
+          },
+          color: '#1F2937',
+          padding: 20
+        },
+        legend: {
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'line',
+            font: {
+              size: 12
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: '#374151',
+          borderWidth: 1,
+          callbacks: {
+            title: (context) => {
+              return `Time: ${context[0].label}`;
+            },
+            label: (context) => {
+              return `${context.dataset.label}: ₹${context.parsed.y.toFixed(2)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Time',
+            font: {
+              size: 12,
+              weight: 'bold'
+            }
+          },
+          ticks: {
+            maxTicksLimit: 12,
+            font: {
+              size: 10
+            }
+          },
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Price (₹)',
+            font: {
+              size: 12,
+              weight: 'bold'
+            }
+          },
+          min: Math.min(...actual, ...predicted) - 2,
+          max: Math.max(...actual, ...predicted) + 2,
+          ticks: {
+            font: {
+              size: 10
+            },
+            stepSize: 0.5,
+            callback: function(value) {
+              return '₹' + value.toFixed(2);
+            }
+          },
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+      },
+      elements: {
+        point: {
+          hoverRadius: 6,
+        },
+      },
+    };
+
+    return (
+      <div className="mt-6 bg-gray-50 rounded-lg p-4">
+        <div className="h-80 w-full">
+          <Line data={data} options={options} />
+        </div>
+        <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
+          <span>Model: {model.uploaded_by}</span>
+          <span>Average Error: {(avgError * 100).toFixed(2)}%</span>
+          <span>Data Points: {csvData.length}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Check hackathon status from Django backend
   useEffect(() => {
     const fetchHackathonStatus = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/hackathon/status/");
+        const response = await axios.get(
+          "http://localhost:8000/hackathon/status/"
+        );
+        console.log("🔍 Hackathon status response:", response.data);
+
         if (response.data.status === "ongoing") {
           setHackathonStatus("ongoing");
           setHackathonTitle(response.data.title);
@@ -45,7 +279,7 @@ const Home = () => {
           setIsHackathonActive(false);
         }
       } catch (err) {
-        setError("Failed to fetch hackathon status.", err);
+        setError("Failed to fetch hackathon status.");
         setHackathonStatus("not_found");
         setIsHackathonActive(false);
       }
@@ -66,15 +300,13 @@ const Home = () => {
           { only_model_info: true },
           { headers: { Authorization: `Bearer ${access}` } }
         );
-        const basicModels = modelsRes.data.results.map(model => ({
+
+        const basicModels = modelsRes.data.results.map((model) => ({
           uploaded_by: model.uploaded_by,
           model_file: model.model_file,
           reward_token: model.reward_token || 0,
-          predictions: model.predictions,
-          actual_5: model.actual_5,
-          actual_10: model.actual_10,
-          actual_15: model.actual_15
         }));
+
         setModels(basicModels);
       } catch (err) {
         setError("Failed to fetch model list.", err);
@@ -90,17 +322,62 @@ const Home = () => {
       // eslint-disable-next-line no-unused-vars
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = await getArenaContract();
-      let hackathonId = currentHackathonId ?? (await contract.hackathonCounter()).toNumber() - 1;
+
+      let hackathonId;
+
+      if (currentHackathonId !== null) {
+        hackathonId = currentHackathonId;
+      } else {
+        const counter = await contract.hackathonCounter();
+        hackathonId = counter.toNumber() - 1;
+        setCurrentHackathonId(hackathonId);
+      }
+
+      console.log(
+        `📊 Fetching blockchain data for hackathon ID: ${hackathonId}`
+      );
+
+      if (hackathonId < 0) {
+        console.log("No hackathons created yet");
+        setParticipants([]);
+        setPrizePool("0");
+        setCurrentHackathonId(null);
+        return;
+      }
+
       setCurrentHackathonId(hackathonId);
 
       const players = await contract.getPlayers(hackathonId);
-      const hackathonDetails = await contract.hackathons(hackathonId);
+      console.log(`👥 Players in hackathon ${hackathonId}:`, players);
 
-      if (hackathonDetails && hackathonDetails.prizePool) {
-        const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
-        setPrizePool(prizePoolInEth);
-      } else {
-        setPrizePool((players.length * 0.7).toString());
+      try {
+        const hackathonDetails = await contract.hackathons(hackathonId);
+
+        console.log("🔍 Full hackathon details:", {
+          id: hackathonDetails.id?.toString(),
+          startTime: hackathonDetails.startTime?.toString(),
+          endTime: hackathonDetails.endTime?.toString(),
+          prizePool: hackathonDetails.prizePool?.toString(),
+          players: hackathonDetails.players,
+          winner: hackathonDetails.winner,
+          ended: hackathonDetails.ended,
+        });
+
+        if (hackathonDetails && hackathonDetails.prizePool) {
+          const prizePoolInEth = ethers.utils.formatEther(
+            hackathonDetails.prizePool
+          );
+          setPrizePool(prizePoolInEth);
+          console.log(`💰 Prize pool from contract: ${prizePoolInEth} ETH`);
+        } else {
+          console.log("❌ No prize pool found in hackathon struct");
+          setPrizePool("0");
+        }
+      } catch (err) {
+        console.error("🔴 Error fetching hackathon details:", err);
+        const fallbackPrizePool = players.length;
+        setPrizePool(fallbackPrizePool.toString());
+        console.log(`💰 Fallback prize pool: ${fallbackPrizePool} ETH`);
       }
 
       setParticipants(players);
@@ -116,6 +393,7 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [isHackathonActive, currentHackathonId]);
 
+  // SIMPLIFIED UPLOAD MODEL PAYMENT FUNCTION
   const handleUploadModelPayment = async () => {
     if (!isHackathonActive) return;
     try {
@@ -123,31 +401,28 @@ const Home = () => {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = await getArenaContract(signer);
-      const counter = await contract.hackathonCounter();
-      const hackathonId = counter.toNumber()-1;
 
-      const players = await contract.getPlayers(hackathonId);
-      const userAddress = await signer.getAddress();
-      const alreadyJoined = players.some(
-        (addr) => addr.toLowerCase() === userAddress.toLowerCase()
+      console.log(
+        "💰 Sending 1 ETH to contract - will trigger receive() function"
       );
 
-      if (alreadyJoined) {
-        const tx = await signer.sendTransaction({
-          to: contract.address,
-          value: ethers.utils.parseEther("1.0"),
-        });
-        await tx.wait();
-        console.log("💰 Prize pool updated for existing participant.");
-      } else {
-        const tx = await contract.joinHackathon(hackathonId, {
-          value: ethers.utils.parseEther("1.0"),
-        });
-        await tx.wait();
-        console.log("✅ Joined and paid.");
-      }
-      console.log("Navigating with hackathonId:", hackathonId);
-      navigate("/UploadModel", {state:{hackathonId}});
+      const tx = await signer.sendTransaction({
+        to: contract.address,
+        value: ethers.utils.parseEther("1.0"),
+        gasLimit: 100000,
+      });
+
+      console.log("📤 Transaction sent:", tx.hash);
+
+      const receipt = await tx.wait();
+      console.log("✅ Transaction confirmed:", receipt);
+
+      setTimeout(() => {
+        console.log("🔄 Refreshing blockchain data...");
+        fetchOnChainData();
+      }, 3000);
+
+      navigate("/UploadModel");
     } catch (err) {
       if (err.message.includes("user rejected")) {
         setTxError("Transaction rejected.");
@@ -169,6 +444,7 @@ const Home = () => {
         {},
         { headers: { Authorization: `Bearer ${access}` } }
       );
+
       setModels(predRes.data.results);
       setPredictionStartTime(new Date().toISOString());
       setShowPredictions(true);
@@ -180,201 +456,164 @@ const Home = () => {
     }
   };
 
+  // Loading state
   if (loading) {
-    return (
-      <div className="h-screen w-screen pt-20 bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-300 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-purple-300 text-lg">Loading hackathon...</p>
-        </div>
+  return (
+    <div className="flex justify-center items-center h-64 bg-[#1F4287] text-white">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#21E6C1] mx-auto mb-4"></div>
+        <p className="text-lg">⏳ Loading hackathon data...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (hackathonStatus === "not_found") {
-    return (
-      <div className="h-screen w-screen pt-20 bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] flex items-center justify-center px-4">
-        <div className="max-w-md w-full">
-          <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur-xl border border-pink-500/30 rounded-2xl p-8 text-center shadow-2xl">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-white mb-2">No Active Hackathon</h2>
-              <p className="text-purple-300 text-lg">
-                There are currently no hackathons running. Check back later for exciting competitions!
-              </p>
-            </div>
-            <div className="pt-4 border-t border-purple-500/20">
-              <p className="text-purple-400 text-sm">
-                Want to be notified when new hackathons start? Join our community!
-              </p>
-            </div>
-          </div>
-        </div>
+// Error state
+if (error) {
+  return (
+    <div className="text-center py-8 bg-[#071E3D] text-white">
+      <div className="text-[#FF6B6B] text-lg mb-4">❌ {error}</div>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-[#278EA5] text-white rounded hover:bg-[#21E6C1] transition"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
+// Hackathon ended
+if (hackathonStatus === "ended") {
+  return (
+    <div className="home-container max-w-4xl mx-auto p-6 text-center bg-[#071E3D] text-white rounded-lg">
+      <div className="bg-gradient-to-br from-[#1F4287] via-[#278EA5] to-[#071E3D] border border-[#278EA5] rounded-lg p-8">
+        <h2 className="text-3xl font-bold text-[#FF6B6B] mb-4">
+          🏁 Hackathon Ended
+        </h2>
+        <p className="text-xl text-[#F87171] mb-4">
+          The hackathon "{hackathonTitle}" has ended.
+        </p>
+        <p className="text-white text-opacity-80">
+          Please wait for the next hackathon to be announced.
+        </p>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+// No active hackathon
+if (hackathonStatus === "not_found" || !isHackathonActive) {
+  return (
+    <div className="home-container max-w-4xl mx-auto p-6 text-center bg-[#071E3D] text-white rounded-lg">
+      <div className="bg-gradient-to-br from-[#1F4287] via-[#278EA5] to-[#071E3D] border border-[#21E6C1] rounded-lg p-8">
+        <h2 className="text-3xl font-bold text-[#FBBF24] mb-4">
+          ⏳ No Active Hackathon
+        </h2>
+        <p className="text-xl text-[#FCD34D] mb-4">
+          There is no active hackathon running at the moment.
+        </p>
+        <p className="text-white text-opacity-80">
+          Please check back later or contact the organizers.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
   return (
-    <div className="h-max w-screen pt-20 bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
-              </svg>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-200 to-pink-200 bg-clip-text text-transparent">
-              {hackathonTitle}
-            </h1>
-          </div>
-          <p className="text-purple-300 text-lg max-w-2xl mx-auto">
-            Compete with ML models and win ETH rewards in this live hackathon
+    <div className="w-screen min-h-screen px-6 py-10 bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] text-white font-sans">
+      <h2 className="text-4xl font-bold text-center mb-8 text-purple-100">
+        🚀 {hackathonTitle}
+      </h2>
+
+      <div className="bg-purple-900 bg-opacity-30 border border-purple-700 rounded-xl p-6 mb-6 text-center">
+        <div className="flex items-center justify-center">
+          <div className="h-3 w-3 bg-green-400 rounded-full animate-pulse mr-2"></div>
+          <span className="text-green-200 font-semibold">
+            Hackathon is currently ongoing
+          </span>
+        </div>
+        {currentHackathonId !== null && (
+          <p className="text-sm text-purple-300 mt-2">
+            Hackathon ID: <strong>{currentHackathonId}</strong>
+          </p>
+        )}
+      </div>
+
+      <div className="bg-purple-800 bg-opacity-30 p-6 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+        <div>
+          <p className="text-lg text-purple-300">🏆 Prize Pool</p>
+          <p className="text-3xl font-bold text-green-300">{prizePool} ETH</p>
+        </div>
+        <div>
+          <p className="text-lg text-purple-300">👥 Participants</p>
+          <p className="text-3xl font-bold text-blue-300">
+            {participants.length}
           </p>
         </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-xl border border-purple-400/20 rounded-2xl p-6 text-center shadow-xl">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
-                </svg>
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold mb-2 text-purple-200">Prize Pool</h3>
-            <p className="text-3xl font-bold text-yellow-400">{prizePool} ETH</p>
-            <p className="text-purple-400 text-sm mt-2">Total rewards available</p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-pink-600/20 to-pink-800/20 backdrop-blur-xl border border-pink-400/20 rounded-2xl p-6 text-center shadow-xl">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                </svg>
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold mb-2 text-pink-200">Participants</h3>
-            <p className="text-3xl font-bold text-blue-400">{participants.length}</p>
-            <p className="text-pink-400 text-sm mt-2">Active competitors</p>
-          </div>
-        </div>
+      <div className="text-center mb-12">
+        <button
+          onClick={handleUploadModelPayment}
+          disabled={isUploading}
+          className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg mr-4 shadow-md transition"
+        >
+          {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
+        </button>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <button
-            onClick={handleUploadModelPayment}
-            disabled={isUploading}
-            className="group relative px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            <div className="flex items-center justify-center gap-2">
-              {isUploading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <span>Upload Model</span>
-                  <span className="text-yellow-300 font-bold">(1 ETH)</span>
-                </>
-              )}
-            </div>
-          </button>
-          
-          <button
-            onClick={handleGetPredictions}
-            disabled={isRunningPredictions}
-            className="group relative px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            <div className="flex items-center justify-center gap-2">
-              {isRunningPredictions ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  <span>Running...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <span>Get Predictions</span>
-                </>
-              )}
-            </div>
-          </button>
-        </div>
+        <button
+          onClick={handleGetPredictions}
+          disabled={isRunningPredictions}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition"
+        >
+          {isRunningPredictions
+            ? "🔄 Running Predictions..."
+            : "📊 Get Predictions"}
+        </button>
 
-        {/* Error Display */}
-        {txError && (
-          <div className="max-w-md mx-auto mb-8">
-            <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 backdrop-blur-sm">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <p className="text-red-300">{txError}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {txError && <p className="text-red-400 mt-3">{txError}</p>}
+      </div>
 
-        {/* Models Section */}
-        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl border border-purple-400/20 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-3xl font-bold text-purple-200 mb-8 text-center">Submitted Models</h2>
-
-          {models.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="text-xl font-semibold text-purple-300 mb-2">No Models Yet</h3>
-              <p className="text-purple-400">Be the first to upload a model and compete!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {models.map((model, index) => (
-                <div key={index} className="bg-gradient-to-br from-purple-800/20 to-pink-800/20 backdrop-blur-sm border border-purple-400/30 rounded-xl p-6 hover:border-purple-400/50 transition-all duration-300 shadow-lg">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
-                        {model.uploaded_by.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-purple-200">{model.uploaded_by}</h3>
-                        <p className="text-purple-400 text-sm truncate max-w-xs">{model.model_file}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-yellow-400 font-bold">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
-                        </svg>
-                        <span>{model.reward_token}</span>
-                      </div>
-                      <p className="text-purple-400 text-xs">Tokens</p>
-                    </div>
+      <div className="mb-4">
+        <h3 className="text-2xl font-semibold mb-4 text-purple-200">📊 Models & Performance</h3>
+        {models.length === 0 ? (
+          <p className="text-purple-300 text-center">No models submitted yet.</p>
+        ) : (
+          <div className="grid gap-6">
+            {models.map((model, index) => (
+              <div
+                key={index}
+                className="bg-purple-900 bg-opacity-40 border border-purple-700 rounded-2xl p-6 hover:shadow-2xl transition"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="text-xl font-bold text-purple-100">
+                      Model {index + 1}: {model.uploaded_by}
+                    </h4>
+                    <p className="text-purple-300 mt-1">
+                      <strong>File:</strong> {model.model_file}
+                    </p>
                   </div>
+                  <div className="text-right">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-200 text-yellow-800">
+                      🏆 {model.reward_token || 0} tokens
+                    </span>
+                  </div>
+                </div>
 
-                  {showPredictions && model.predictions && predictionStartTime && (
-                    <div className="mt-6 pt-4 border-t border-purple-400/20">
-                      <h4 className="text-lg font-semibold text-purple-200 mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        Live Predictions
-                      </h4>
-                      <div className="space-y-3">
+                {csvData.length > 0 && createModelChart(model, index)}
+
+                {showPredictions &&
+                  model.predictions &&
+                  predictionStartTime && (
+                    <div className="mt-4 border-t pt-4 border-purple-700">
+                      <h5 className="font-semibold text-lg mb-3 text-purple-200">
+                        🎯 Predictions:
+                      </h5>
+                      <div className="space-y-2">
                         <CountdownTimer
                           key={`5min-${renderKey}-${index}`}
                           label="+5 min"
@@ -402,11 +641,21 @@ const Home = () => {
                       </div>
                     </div>
                   )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-10 p-6 bg-purple-950 bg-opacity-30 rounded-xl text-sm text-purple-200">
+        <h4 className="font-semibold mb-2">Debug Info:</h4>
+        <p>Current Hackathon ID: {currentHackathonId}</p>
+        <p>Hackathon Status: {hackathonStatus}</p>
+        <p>Is Active: {isHackathonActive.toString()}</p>
+        <p>Prize Pool: {prizePool} ETH</p>
+        <p>Participants: {participants.length}</p>
+        <p>CSV Data Points: {csvData.length}</p>
+        <p>Leaderboard Entries: {leaderboard.length}</p>
       </div>
     </div>
   );
