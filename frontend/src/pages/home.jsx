@@ -12,7 +12,9 @@ const Home = () => {
   const [prizePool, setPrizePool] = useState("0");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [isUploading, setIsUploading] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [txError, setTxError] = useState("");
   const [showPredictions, setShowPredictions] = useState(false);
   const [predictionStartTime, setPredictionStartTime] = useState(null);
@@ -21,7 +23,6 @@ const Home = () => {
 
   const navigate = useNavigate();
 
-  // Initial load - fetch model info without running predictions
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -29,19 +30,18 @@ const Home = () => {
         const [modelsRes, titleRes] = await Promise.all([
           axios.post(
             "http://localhost:8000/prediction/run-prediction/",
-            { only_model_info: true }, // Flag to only get model info
+            { only_model_info: true },
             { headers: { Authorization: `Bearer ${access}` } }
           ),
           axios.get("http://localhost:8000/hackathon/status/"),
         ]);
 
-        // Extract only basic model info (uploader and file name)
         const basicModels = modelsRes.data.results.map(model => ({
           uploaded_by: model.uploaded_by,
           model_file: model.model_file,
           reward_token: model.reward_token || 0
         }));
-        
+
         setModels(basicModels);
         setHackathonTitle(titleRes.data.title);
       } catch (err) {
@@ -55,7 +55,6 @@ const Home = () => {
     fetchInitialData();
   }, []);
 
-  // Blockchain data fetching
   useEffect(() => {
     const fetchOnChainData = async () => {
       try {
@@ -119,7 +118,6 @@ const Home = () => {
     }
   };
 
-  // Get Predictions - runs the full prediction logic
   const handleGetPredictions = async () => {
     setIsRunningPredictions(true);
     try {
@@ -130,7 +128,6 @@ const Home = () => {
         { headers: { Authorization: `Bearer ${access}` } }
       );
 
-      // Update models with prediction results
       setModels(predRes.data.results);
       const currentTime = new Date().toISOString();
       setShowPredictions(true);
@@ -144,96 +141,105 @@ const Home = () => {
     }
   };
 
-  if (loading) return <div>⏳ Loading models...</div>;
-  if (error) return <div>❌ {error}</div>;
+  if (loading) return <div className="text-white text-center">⏳ Loading models...</div>;
+  if (error) return <div className="text-red-500 text-center">{error}</div>;
 
   return (
-    <div className="home-container">
-      <h2>🚀 {hackathonTitle || "Hackathon"}</h2>
+  <div className="w-screen h-screen bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] text-white">
+  <h2 className="text-4xl font-bold text-purple-400 mb-8 text-center">
+    🚀 {hackathonTitle || "Hackathon Overview"}
+  </h2>
 
-      <div className="text-md text-gray-700 mb-4">
-        <p>🏆 Prize Pool: <strong>{prizePool} ETH</strong></p>
-        <p>👥 Participants: <strong>{participants.length}</strong></p>
-      </div>
-
-      <div className="mb-4">
-        <button
-          onClick={handleUploadModelPayment}
-          disabled={isUploading}
-          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded mr-4"
-        >
-          {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
-        </button>
-        
-        {/* Get Predictions button - always visible */}
-        <button
-          onClick={handleGetPredictions}
-          disabled={isRunningPredictions}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400"
-        >
-          {isRunningPredictions ? "🔄 Running Predictions..." : "📊 Get Predictions"}
-        </button>
-        
-        {txError && <p className="text-red-600 mt-2">{txError}</p>}
-      </div>
-
-      <h3 className="text-xl font-semibold mt-4">📊 Models</h3>
-      {models.length === 0 ? (
-        <p>No models found.</p>
-      ) : (
-        <div className="model-grid">
-          {models.map((model, index) => (
-            <div
-              key={index}
-              className="model-card border p-4 rounded-lg shadow-md my-3 bg-white"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-bold text-lg">Uploader: {model.uploaded_by}</h3>
-                  <p><strong>Model File:</strong> {model.model_file}</p>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                    🏆 {model.reward_token || 0} tokens
-                  </span>
-                </div>
-              </div>
-
-              {/* Show predictions only after Get Predictions is clicked */}
-              {showPredictions && model.predictions && predictionStartTime && (
-                <div className="mt-4">
-                  <h4 className="font-semibold text-md mb-2">🎯 Predictions:</h4>
-                  <CountdownTimer
-                    key={`5min-${renderKey}-${index}`}
-                    label="+5 min"
-                    prediction={model.predictions["+5min"]}
-                    actual={model.actual_5}
-                    baseTime={predictionStartTime}
-                    delayMinutes={5}
-                  />
-                  <CountdownTimer
-                    key={`10min-${renderKey}-${index}`}
-                    label="+10 min"
-                    prediction={model.predictions["+10min"]}
-                    actual={model.actual_10}
-                    baseTime={predictionStartTime}
-                    delayMinutes={10}
-                  />
-                  <CountdownTimer
-                    key={`15min-${renderKey}-${index}`}
-                    label="+15 min"
-                    prediction={model.predictions["+15min"]}
-                    actual={model.actual_15}
-                    baseTime={predictionStartTime}
-                    delayMinutes={15}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+  {/* Arena Stats */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+    <div className="bg-gradient-to-br from-purple-700 to-indigo-700 p-6 rounded-2xl shadow-lg hover:shadow-purple-900 transition duration-300">
+      <h4 className="text-lg font-semibold text-white mb-2">🏆 Prize Pool</h4>
+      <p className="text-3xl font-bold text-green-300">{prizePool} ETH</p>
     </div>
+    <div className="bg-gradient-to-br from-pink-700 to-purple-600 p-6 rounded-2xl shadow-lg hover:shadow-pink-900 transition duration-300">
+      <h4 className="text-lg font-semibold text-white mb-2">👥 Participants</h4>
+      <p className="text-3xl font-bold text-yellow-300">{participants.length}</p>
+    </div>
+  </div>
+
+  {/* Action Buttons */}
+  <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-12">
+    <button
+      onClick={handleUploadModelPayment}
+      disabled={isUploading}
+      className="bg-pink-600 hover:bg-pink-700 disabled:opacity-50 text-white text-lg px-8 py-3 rounded-xl shadow-lg transition duration-300"
+    >
+      {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
+    </button>
+
+    <button
+      onClick={handleGetPredictions}
+      disabled={isRunningPredictions}
+      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-lg px-8 py-3 rounded-xl shadow-lg transition duration-300"
+    >
+      {isRunningPredictions ? "🔄 Running Predictions..." : "📊 Get Predictions"}
+    </button>
+  </div>
+
+  {txError && (
+    <p className="text-center text-red-400 mb-6">{txError}</p>
+  )}
+
+  {/* Submitted Models */}
+  <h3 className="text-3xl font-semibold mb-6 text-center">📈 Submitted Models</h3>
+
+  {models.length === 0 ? (
+    <p className="text-center text-gray-300">No models submitted yet.</p>
+  ) : (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {models.map((model, index) => (
+        <div
+          key={index}
+          className="bg-[#1f0033] border border-purple-800 p-6 rounded-2xl shadow-md hover:shadow-purple-800 transition duration-300"
+        >
+          <div className="mb-4">
+            <h4 className="text-xl font-bold text-purple-300 mb-1">Uploader: {model.uploaded_by}</h4>
+            <p className="text-sm text-gray-400 truncate">📦 {model.model_file}</p>
+            <p className="text-yellow-400 font-semibold mt-3">🏆 {model.reward_token} Tokens</p>
+          </div>
+
+          {showPredictions && model.predictions && predictionStartTime && (
+            <div>
+              <h5 className="text-md text-white font-semibold mb-2">🎯 Live Predictions</h5>
+              <div className="space-y-2">
+                <CountdownTimer
+                  key={`5min-${renderKey}-${index}`}
+                  label="+5 min"
+                  prediction={model.predictions["+5min"]}
+                  actual={model.actual_5}
+                  baseTime={predictionStartTime}
+                  delayMinutes={5}
+                />
+                <CountdownTimer
+                  key={`10min-${renderKey}-${index}`}
+                  label="+10 min"
+                  prediction={model.predictions["+10min"]}
+                  actual={model.actual_10}
+                  baseTime={predictionStartTime}
+                  delayMinutes={10}
+                />
+                <CountdownTimer
+                  key={`15min-${renderKey}-${index}`}
+                  label="+15 min"
+                  prediction={model.predictions["+15min"]}
+                  actual={model.actual_15}
+                  baseTime={predictionStartTime}
+                  delayMinutes={15}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
   );
 };
 
