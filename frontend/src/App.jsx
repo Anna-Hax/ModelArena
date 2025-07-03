@@ -9,7 +9,7 @@ import ConnectWallet from "./pages/walletConnect";
 import SendEtherPage from './pages/walletinfo';
 import HackathonInfo from "./pages/HackathonInfo(blockchain)";
 import JoinHackathon from "./pages/HackathonInfo(blockchain)";
-
+import MLModelsBattle from "./pages/mainPage"
 import { UserContextProvider } from "./context/AuthContext";
 import { WalletProvider } from "./context/WalletContext"; // ✅ Correct import
 
@@ -31,6 +31,7 @@ const App = () => {
             <Route path="/wallet-info" element={<SendEtherPage />} />
             <Route path="/hack-info" element={<HackathonInfo />} />
              <Route path="/hack-join" element={<JoinHackathon/>} />
+             <Route path="/main-landing" element={<MLModelsBattle/>} /> {/* urls kharab hai, will take care of them later*/}
           </Routes>
         </Router>
       </WalletProvider>
