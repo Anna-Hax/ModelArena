@@ -1,33 +1,24 @@
-import React from 'react';
-import { createContext, useContext, useState, useEffect } from 'react';
+// components/RequireAuth.jsx
+import { useEffect } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
 import axios from "axios";
 
-const UserContext = createContext();
+const RequireAuth = () => {
+  const navigate = useNavigate();
 
-export const UserContextProvider = ({children}) => {
-    const [userData, setUserData] = useState(null);
-    const fetchUserData = async () => {
-        try{
-            //const response = await axios.get("http://localhost:8000/auth/get_user/");
-            // console.log(response.data);
-            setUserData(response.data);
-        }catch(error)
-        {
-            console.log("user not logged in", error);
-            // console.log(error);
-            setUserData(null);
-        }
+  useEffect(() => {
+    const access = localStorage.getItem("access");
+    if (!access) {
+      navigate("/login");
+      return;
     }
 
-    useEffect(() => {
-        fetchUserData();
-    }, []);
+    axios.get("http://localhost:8000/auth/get_user/", {
+      headers: { Authorization: `Bearer ${access}` },
+    }).catch(() => navigate("/login"));
+  }, [navigate]);
 
-    return (
-        <UserContext.Provider value={{userData, setUserData, fetchUserData }}>
-            {children}
-        </UserContext.Provider>
-    );
+  return <Outlet />; 
 };
 
-export const useUser = () => useContext(UserContext);
+export default RequireAuth;

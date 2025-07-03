@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.4",
+    "@tailwindcss/vite": "^4.1.11",
     "@thirdweb-dev/react": "^4.9.4",
     "@thirdweb-dev/sdk": "^4.0.99",
     "axios": "^1.10.0",
@@ -19,7 +20,9 @@
     "react": "^19.1.0",
     "react-countdown": "^2.3.6",
     "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.2",
+    "tailwindcss": "^4.1.11",
     "thirdweb": "^5.105.4",
     "web3modal": "^1.9.12"
   },
