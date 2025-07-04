@@ -8,34 +8,96 @@ import Leaderboard from "./pages/leaderboard";
 import ConnectWallet from "./pages/walletConnect";
 import SendEtherPage from "./pages/walletinfo";
 import HackathonInfo from "./pages/HackathonInfo(blockchain)";
-import JoinHackathon from "./pages/HackathonInfo(blockchain)";
-
-import { UserContextProvider } from "./context/AuthContext";
-import { WalletProvider } from "./context/WalletContext"; // ✅ Correct import
-
-import './App.css';
-
+import JoinHackathon from "./pages/joinHackathon";
+import RequireAuth from "./context/AuthContext";
+import { WalletProvider } from "./context/WalletContext";
+import Navbar from "./components/Navbar";
+import "./App.css";
+// :white_check_mark: Layout with Navbar
+const ProtectedLayout = ({ children }) => (
+  <>
+    <Navbar />
+    {children}
+  </>
+);
 const App = () => {
   return (
-    <UserContextProvider>
-      <WalletProvider> {/* ✅ FIXED: Use correct context provider */}
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/UploadModel" element={<ModelUpload />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/landing" element={<Hackathonlanding />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/wallet" element={<ConnectWallet />} />
-            <Route path="/wallet-info" element={<SendEtherPage />} />
-            <Route path="/hack-info" element={<HackathonInfo />} />
-             <Route path="/hack-join" element={<JoinHackathon/>} />
-          </Routes>
-        </Router>
-      </WalletProvider>
-    </UserContextProvider>
+    <WalletProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          {/* Protected routes */}
+          <Route element={<RequireAuth />}>
+            <Route
+              path="/home"
+              element={
+                <ProtectedLayout>
+                  <Home />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/UploadModel"
+              element={
+                <ProtectedLayout>
+                  <ModelUpload />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/landing"
+              element={
+                <ProtectedLayout>
+                  <Hackathonlanding />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedLayout>
+                  <Leaderboard />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/wallet"
+              element={
+                <ProtectedLayout>
+                  <ConnectWallet />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/wallet-info"
+              element={
+                <ProtectedLayout>
+                  <SendEtherPage />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/hack-info"
+              element={
+                <ProtectedLayout>
+                  <HackathonInfo />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/hack-join"
+              element={
+                <ProtectedLayout>
+                  <JoinHackathon />
+                </ProtectedLayout>
+              }
+            />
+          </Route>
+        </Routes>
+      </Router>
+    </WalletProvider>
   );
 };
-
 export default App;

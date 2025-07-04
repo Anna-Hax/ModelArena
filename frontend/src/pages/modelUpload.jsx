@@ -7,6 +7,7 @@ const ModelUpload = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  console.log("🔍 Location state:", location.state);
   const hackathonId = location.state?.hackathonId;
 
   const handleFileChange = (e) => {
@@ -19,7 +20,7 @@ const ModelUpload = () => {
       return;
     }
 
-    if (!hackathonId && hackathonId !== 0) {
+    if (hackathonId === undefined || hackathonId === null) {
       alert("Missing hackathon ID.");
       return;
     }

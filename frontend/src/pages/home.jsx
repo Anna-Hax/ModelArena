@@ -84,10 +84,10 @@ const Home = () => {
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false
     });
   };
 
@@ -96,8 +96,8 @@ const Home = () => {
     if (csvData.length === 0) return null;
 
     // Find matching leaderboard entry for this model
-    const leaderboardEntry = leaderboard.find(entry => 
-      entry.uploaded_by === model.uploaded_by || 
+    const leaderboardEntry = leaderboard.find(entry =>
+      entry.uploaded_by === model.uploaded_by ||
       entry.model_file === model.model_file
     );
 
@@ -151,7 +151,7 @@ const Home = () => {
         title: {
           display: true,
           text: `📈 ${model.uploaded_by}'s Model (Error: ${(avgError * 100).toFixed(2)}%)`,
-          font: { 
+          font: {
             size: 16,
             weight: 'bold'
           },
@@ -223,7 +223,7 @@ const Home = () => {
               size: 10
             },
             stepSize: 0.5,
-            callback: function(value) {
+            callback: function (value) {
               return '₹' + value.toFixed(2);
             }
           },
@@ -306,7 +306,11 @@ const Home = () => {
           { only_model_info: true },
           { headers: { Authorization: `Bearer ${access}` } }
         );
-
+        if (!Array.isArray(modelsRes.data?.results)) {
+          console.warn("⚠️ No model results found from backend:", modelsRes.data);
+          setModels([]);
+          return;
+        }
         const basicModels = modelsRes.data.results.map((model) => ({
           uploaded_by: model.uploaded_by,
           model_file: model.model_file,
@@ -331,67 +335,66 @@ const Home = () => {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = await getArenaContract();
 
-      let hackathonId;
-
-      if (currentHackathonId !== null) {
-        hackathonId = currentHackathonId;
-      } else {
-        const counter = await contract.hackathonCounter();
-        hackathonId = counter.toNumber() - 1;
-        setCurrentHackathonId(hackathonId);
-      }
-
-      console.log(
-        `📊 Fetching blockchain data for hackathon ID: ${hackathonId}`
-      );
-
-      if (hackathonId < 0) {
-        console.log("No hackathons created yet");
-        setParticipants([]);
-        setPrizePool("0");
-        setCurrentHackathonId(null);
+      // First try to use currentHackathonId if set
+      if (currentHackathonId !== null && currentHackathonId >= 0) {
+        console.log(`📊 Using existing hackathon ID: ${currentHackathonId}`);
+        await fetchHackathonDetails(currentHackathonId);
         return;
       }
 
-      setCurrentHackathonId(hackathonId);
-
-      const players = await contract.getPlayers(hackathonId);
-      console.log(`👥 Players in hackathon ${hackathonId}:`, players);
-
+      // If no current ID, try to get the counter
       try {
-        const hackathonDetails = await contract.hackathons(hackathonId);
+        const counter = await contract.hackathonCounter();
+        const hackathonId = ethers.BigNumber.from(counter).toNumber() - 1;
 
-        console.log("🔍 Full hackathon details:", {
-          id: hackathonDetails.id?.toString(),
-          startTime: hackathonDetails.startTime?.toString(),
-          endTime: hackathonDetails.endTime?.toString(),
-          prizePool: hackathonDetails.prizePool?.toString(),
-          players: hackathonDetails.players,
-          winner: hackathonDetails.winner,
-          ended: hackathonDetails.ended,
-        });
-
-        if (hackathonDetails && hackathonDetails.prizePool) {
-          const prizePoolInEth = ethers.utils.formatEther(
-            hackathonDetails.prizePool
-          );
-          setPrizePool(prizePoolInEth);
-          console.log(`💰 Prize pool from contract: ${prizePoolInEth} ETH`);
+        if (hackathonId >= 0) {
+          console.log(`🔍 Found hackathon ID from counter: ${hackathonId}`);
+          setCurrentHackathonId(hackathonId);
+          await fetchHackathonDetails(hackathonId);
         } else {
-          console.log("❌ No prize pool found in hackathon struct");
+          console.log("No hackathons created yet");
+          setParticipants([]);
           setPrizePool("0");
         }
-      } catch (err) {
-        console.error("🔴 Error fetching hackathon details:", err);
-        const fallbackPrizePool = players.length;
-        setPrizePool(fallbackPrizePool.toString());
-        console.log(`💰 Fallback prize pool: ${fallbackPrizePool} ETH`);
+      } catch (counterError) {
+        console.error("Failed to get hackathonCounter:", counterError);
+        // Fallback to ID 0 if counter fails
+        console.log("🔄 Trying fallback to hackathon ID 0");
+        await fetchHackathonDetails(0);
       }
-
-      setParticipants(players);
     } catch (err) {
       console.error("🔴 Blockchain fetch failed:", err);
       setError("Failed to fetch blockchain data.");
+    }
+  };
+
+  const fetchHackathonDetails = async (hackathonId) => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const contract = await getArenaContract();
+
+    try {
+      const players = await contract.getPlayers(hackathonId);
+      setParticipants(players);
+
+      const hackathonDetails = await contract.hackathons(hackathonId);
+      if (hackathonDetails && hackathonDetails.prizePool) {
+        const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+        setPrizePool(prizePoolInEth);
+      } else {
+        setPrizePool("0");
+      }
+    } catch (detailsError) {
+      console.error("Error fetching hackathon details:", detailsError);
+      // Fallback to just getting players if details fail
+      try {
+        const players = await contract.getPlayers(hackathonId);
+        setParticipants(players);
+        setPrizePool(players.length.toString());
+      } catch (playersError) {
+        console.error("Failed to get players:", playersError);
+        setParticipants([]);
+        setPrizePool("0");
+      }
     }
   };
 
@@ -439,8 +442,9 @@ const Home = () => {
         console.log("🔄 Refreshing blockchain data...");
         fetchOnChainData();
       }, 3000);
+      console.log("Navigating to upload with hackathonId:", currentHackathonId);
+      //navigate("/UploadModel", { state: { hackathonId: currentHackathonId } });
 
-      navigate("/UploadModel");
     } catch (err) {
       console.error("🔴 Payment failed:", err);
       if (err.message.includes("user rejected")) {

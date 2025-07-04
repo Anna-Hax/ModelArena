@@ -146,13 +146,13 @@ arena_abi = [
         {
           "indexed": True,
           "internalType": "uint256",
-          "name": "id",
+          "name": "hackathonId",
           "type": "uint256"
         },
         {
           "indexed": False,
           "internalType": "uint256",
-          "name": "newPrizePool",
+          "name": "prizePool",
           "type": "uint256"
         }
       ],

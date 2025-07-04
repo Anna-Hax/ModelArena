@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -21,8 +20,6 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
     event HackathonCreated(uint256 indexed id, uint256 startTime, uint256 endTime);
     event PlayerJoined(uint256 indexed id, address indexed player);
     event HackathonEnded(uint256 indexed id, address indexed winner, uint256 prize);
-    event PrizePoolUpdated(uint256 indexed id, uint256 newPrizePool);
-
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(BACKEND_ROLE, msg.sender);
@@ -58,20 +55,16 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
         }
         return (false, "");
     }
-
    receive() external payable {
     if (hackathonCounter > 0) {
         uint256 currentHackathonId = hackathonCounter - 1;
         if (!hackathons[currentHackathonId].ended) {
             hackathons[currentHackathonId].prizePool += msg.value;
-            
             // Optional: Emit event for tracking
             emit PrizePoolUpdated(currentHackathonId, hackathons[currentHackathonId].prizePool);
         }
     }
 }
-
-
     function performUpkeep(bytes calldata performData) external override {
         uint256 hackathonId = abi.decode(performData, (uint256));
         require(!hackathons[hackathonId].ended, "Already ended");

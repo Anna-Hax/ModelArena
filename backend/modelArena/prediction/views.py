@@ -106,10 +106,7 @@ class RunPredictionView(APIView):
         
 
 def calculate_and_award_rewards():
-    """
-    Calculate accuracy for all predictions and award reward tokens
-    This should be called after actual values are available (after 5+ minutes)
-    """
+    
     try:
         # Get all predictions that have actual values but haven't been rewarded yet
         predictions = PredictionResult.objects.filter(
