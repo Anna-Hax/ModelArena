@@ -58,6 +58,7 @@ const ModelUpload = () => {
         <p className="ml-4">├── <span className="text-white">train.py</span> <span className="text-gray-400"># Training logic</span></p>
         <p className="ml-4">├── <span className="text-white">model.py</span> <span className="text-gray-400"># Prediction class</span></p>
         <p className="ml-4">└── <span className="text-white">requirements.txt</span> <span className="text-gray-400"># Dependencies</span></p>
+        <p className="ml-4">└── <span className="text-white">model.pkl</span> <span className="text-gray-400"># Dependencies</span></p>        
       </div>
 
       {/* File Input */}

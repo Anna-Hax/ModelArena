@@ -674,16 +674,7 @@ const Home = () => {
         )}
       </div>
 
-      <div className="mt-10 p-6 bg-purple-950 bg-opacity-30 rounded-xl text-sm text-purple-200">
-        <h4 className="font-semibold mb-2">Debug Info:</h4>
-        <p>Current Hackathon ID: {currentHackathonId}</p>
-        <p>Hackathon Status: {hackathonStatus}</p>
-        <p>Is Active: {isHackathonActive.toString()}</p>
-        <p>Prize Pool: {prizePool} ETH</p>
-        <p>Participants: {participants.length}</p>
-        <p>CSV Data Points: {csvData.length}</p>
-        <p>Leaderboard Entries: {leaderboard.length}</p>
-      </div>
+
     </div>
   );
 };

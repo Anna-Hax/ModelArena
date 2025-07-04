@@ -26,7 +26,7 @@ const App = () => {
           <Route path="/" element={<MLModelsBattle />} />
 
           {/* Protected Routes */}
-          <Route element={<RequireAuth />}>
+          
             <Route path="/UploadModel" element={<ModelUpload />} />
             <Route path="/home" element={<Home />} />
             <Route path="/landing" element={<Hackathonlanding />} />
@@ -36,7 +36,6 @@ const App = () => {
             <Route path="/hack-info" element={<HackathonInfo />} />
             <Route path="/hack-join" element={<JoinHackathon />} />
             <Route path="/stock-info" element={<StockChart />} />
-          </Route>
         </Routes>
       </Router>
     </WalletProvider>
