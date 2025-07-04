@@ -60,11 +60,14 @@ contract Arena is Ownable(msg.sender), ReentrancyGuard, AccessControl, KeeperCom
         uint256 currentHackathonId = hackathonCounter - 1;
         if (!hackathons[currentHackathonId].ended) {
             hackathons[currentHackathonId].prizePool += msg.value;
+            
             // Optional: Emit event for tracking
             emit PrizePoolUpdated(currentHackathonId, hackathons[currentHackathonId].prizePool);
         }
     }
 }
+
+
     function performUpkeep(bytes calldata performData) external override {
         uint256 hackathonId = abi.decode(performData, (uint256));
         require(!hackathons[hackathonId].ended, "Already ended");

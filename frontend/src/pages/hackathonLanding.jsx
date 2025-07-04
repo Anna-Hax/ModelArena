@@ -101,114 +101,49 @@ const HackathonLanding = () => {
   };
 
   const handleJoinAndEnter = async () => {
-  try {
-    setIsJoining(true);
-    setTxError("");
-
-    // Check if MetaMask is installed
-    if (!window.ethereum) {
-      throw new Error("Please install MetaMask to continue");
-    }
-
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    // Network configuration
-    const TARGET_CHAIN_ID = "31337"; // Hardhat local network
-    const TARGET_CHAIN_NAME = "Localhost";
-
-    // Check current network
-    const network = await provider.getNetwork();
-    if (network.chainId.toString() !== TARGET_CHAIN_ID) {
-      try {
-        // Try to switch networks automatically
-        await window.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: `0x${parseInt(TARGET_CHAIN_ID).toString(16)}` }],
-        });
-      } catch (switchError) {
-        // This error code indicates the chain hasn't been added to MetaMask
-        if (switchError.code === 4902) {
-          try {
-            await window.ethereum.request({
-              method: "wallet_addEthereumChain",
-              params: [
-                {
-                  chainId: `0x${parseInt(TARGET_CHAIN_ID).toString(16)}`,
-                  chainName: TARGET_CHAIN_NAME,
-                  nativeCurrency: {
-                    name: "ETH",
-                    symbol: "ETH",
-                    decimals: 18,
-                  },
-                  rpcUrls: ["http://127.0.0.1:8545"], // Your local node URL
-                },
-              ],
-            });
-          } catch (addError) {
-            console.error("Error adding network:", addError);
-            throw new Error(
-              `Please connect to ${TARGET_CHAIN_NAME} (Chain ID: ${TARGET_CHAIN_ID}) in MetaMask`
-            );
-          }
-        } else {
-          throw new Error(
-            `Failed to switch networks. Please connect to ${TARGET_CHAIN_NAME} (Chain ID: ${TARGET_CHAIN_ID})`
-          );
-        }
-      }
-    }
-
-    // Rest of your contract interaction code
-    const contract = await getArenaContract(signer);
-    const userAddress = await signer.getAddress();
-
-    let hackathonId;
     try {
+      setIsJoining(true);
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      const contract = await getArenaContract(signer);
+
       const counter = await contract.hackathonCounter();
-      hackathonId = counter.toNumber() - 1;
-      if (hackathonId < 0) throw new Error("No active hackathon found");
-    } catch (counterError) {
-      console.error("Failed to get counter, trying fallback:", counterError);
-      hackathonId = 0;
-    }
+      if (counter.toNumber() === 0) {
+        setTxError("❌ No active hackathon on blockchain.");
+        return;
+      }
 
-    const players = await contract.getPlayers(hackathonId);
-    const alreadyJoined = players.some(
-      (addr) => addr.toLowerCase() === userAddress.toLowerCase()
-    );
+      const hackathonId = counter.toNumber() - 1;
 
-    if (alreadyJoined) {
+      const players = await contract.getPlayers(hackathonId);
+      const alreadyJoined = players.some(
+        (addr) => addr.toLowerCase() === userAddress.toLowerCase()
+      );
+
+      if (alreadyJoined) {
+        console.log("✅ Already joined, skipping payment");
+        setShowModal(false);
+        navigate("/home");
+        return;
+      }
+
+      const tx = await contract.joinHackathon(hackathonId, {
+        value: ethers.utils.parseEther("1.0"),
+      });
+      await tx.wait();
+
       setShowModal(false);
-      //navigate("/home");
-      return;
+      navigate("/home");
+    } catch (err) {
+      console.error("Join failed:", err);
+      setTxError("❌ Join failed. " + (err?.message || ""));
+    } finally {
+      setIsJoining(false);
     }
-
-    const tx = await contract.joinHackathon(hackathonId, {
-      value: ethers.utils.parseEther("1.0"),
-      gasLimit: 300000,
-    });
-
-    await tx.wait();
-    setShowModal(false);
-    navigate("/home");
-  } catch (err) {
-    console.error("Join failed:", err);
-    let errorMessage = "Join failed";
-
-    if (err.message.includes("user rejected")) {
-      errorMessage = "Transaction was rejected";
-    } else if (err.message.includes("insufficient funds")) {
-      errorMessage = "Insufficient ETH balance";
-    } else if (err.message.includes("call revert exception")) {
-      errorMessage = "Contract interaction failed";
-    }
-
-    setTxError(`❌ ${errorMessage}`);
-  } finally {
-    setIsJoining(false);
-  }
-};
+  };
 
   const isLastTen = timer !== null && timer <= 10 && status !== "ended";
 
@@ -226,14 +161,15 @@ const HackathonLanding = () => {
         {status === "ongoing"
           ? "🟢 Ongoing"
           : status === "upcoming"
-            ? "⏳ Upcoming"
-            : "✅ Ended"}
+          ? "⏳ Upcoming"
+          : "✅ Ended"}
       </div>
 
       {status !== "ended" && (
         <div
-          className={`text-2xl font-semibold mb-4 ${isLastTen ? "text-red-600 animate-pulse" : "text-blue-700"
-            }`}
+          className={`text-2xl font-semibold mb-4 ${
+            isLastTen ? "text-red-600 animate-pulse" : "text-blue-700"
+          }`}
         >
           {status === "upcoming" ? "Starts in:" : "Time remaining:"}{" "}
           {formatTime(timer)}
