@@ -580,45 +580,43 @@ const Home = () => {
 
   // Active hackathon state
   return (
-    <div className="home-container max-w-6xl mx-auto p-6">
-      <h2 className="text-3xl font-bold text-center mb-6">
+    <div className="w-screen min-h-screen px-6 py-10 bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] text-white font-sans">
+      <h2 className="text-4xl font-bold text-center mb-8 text-purple-100">
         🚀 {hackathonTitle}
       </h2>
 
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+      <div className="bg-purple-900 bg-opacity-30 border border-purple-700 rounded-xl p-6 mb-6 text-center">
         <div className="flex items-center justify-center">
-          <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse mr-2"></div>
-          <span className="text-green-800 font-semibold">
+          <div className="h-3 w-3 bg-green-400 rounded-full animate-pulse mr-2"></div>
+          <span className="text-green-200 font-semibold">
             Hackathon is currently ongoing
           </span>
         </div>
         {currentHackathonId !== null && (
-          <p className="text-sm text-gray-600 text-center mt-2">
+          <p className="text-sm text-purple-300 mt-2">
             Hackathon ID: <strong>{currentHackathonId}</strong>
           </p>
         )}
       </div>
 
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
-          <div>
-            <p className="text-lg">🏆 Prize Pool</p>
-            <p className="text-2xl font-bold text-green-600">{prizePool} ETH</p>
-          </div>
-          <div>
-            <p className="text-lg">👥 Participants</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {participants.length}
-            </p>
-          </div>
+      <div className="bg-purple-800 bg-opacity-30 p-6 rounded-xl mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+        <div>
+          <p className="text-lg text-purple-300">🏆 Prize Pool</p>
+          <p className="text-3xl font-bold text-green-300">{prizePool} ETH</p>
+        </div>
+        <div>
+          <p className="text-lg text-purple-300">👥 Participants</p>
+          <p className="text-3xl font-bold text-blue-300">
+            {participants.length}
+          </p>
         </div>
       </div>
 
-      <div className="mb-6 text-center">
+      <div className="text-center mb-12">
         <button
           onClick={handleUploadModelPayment}
           disabled={isUploading}
-          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg mr-4 transition-colors"
+          className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg mr-4 shadow-md transition"
         >
           {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
         </button>
@@ -626,55 +624,50 @@ const Home = () => {
         <button
           onClick={handleGetPredictions}
           disabled={isRunningPredictions}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition"
         >
           {isRunningPredictions
             ? "🔄 Running Predictions..."
             : "📊 Get Predictions"}
         </button>
 
-        {txError && <p className="text-red-600 mt-3">{txError}</p>}
+        {txError && <p className="text-red-400 mt-3">{txError}</p>}
       </div>
 
       <div className="mb-4">
-        <h3 className="text-2xl font-semibold mb-4">📊 Models & Performance</h3>
+        <h3 className="text-2xl font-semibold mb-4 text-purple-200">📊 Models & Performance</h3>
         {models.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>No models found for this hackathon.</p>
-            <p className="text-sm mt-2">Be the first to upload a model!</p>
-          </div>
+          <p className="text-purple-300 text-center">No models submitted yet.</p>
         ) : (
           <div className="grid gap-6">
             {models.map((model, index) => (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+                className="bg-purple-900 bg-opacity-40 border border-purple-700 rounded-2xl p-6 hover:shadow-2xl transition"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h4 className="text-xl font-bold text-gray-800">
+                    <h4 className="text-xl font-bold text-purple-100">
                       Model {index + 1}: {model.uploaded_by}
                     </h4>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-purple-300 mt-1">
                       <strong>File:</strong> {model.model_file}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-200 text-yellow-800">
                       🏆 {model.reward_token || 0} tokens
                     </span>
                   </div>
                 </div>
 
-                {/* Individual Chart for Each Model */}
                 {csvData.length > 0 && createModelChart(model, index)}
 
-                {/* Show predictions only after Get Predictions is clicked */}
                 {showPredictions &&
                   model.predictions &&
                   predictionStartTime && (
-                    <div className="mt-4 border-t pt-4">
-                      <h5 className="font-semibold text-lg mb-3">
+                    <div className="mt-4 border-t pt-4 border-purple-700">
+                      <h5 className="font-semibold text-lg mb-3 text-purple-200">
                         🎯 Predictions:
                       </h5>
                       <div className="space-y-2">
@@ -711,17 +704,7 @@ const Home = () => {
         )}
       </div>
 
-      {/* Debug Info */}
-      <div className="mt-8 p-4 bg-gray-100 rounded-lg text-sm">
-        <h4 className="font-semibold mb-2">Debug Info:</h4>
-        <p>Current Hackathon ID: {currentHackathonId}</p>
-        <p>Hackathon Status: {hackathonStatus}</p>
-        <p>Is Active: {isHackathonActive.toString()}</p>
-        <p>Prize Pool: {prizePool} ETH</p>
-        <p>Participants: {participants.length}</p>
-        <p>CSV Data Points: {csvData.length}</p>
-        <p>Leaderboard Entries: {leaderboard.length}</p>
-      </div>
+
     </div>
   );
 };

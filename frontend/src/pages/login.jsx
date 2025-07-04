@@ -17,15 +17,16 @@ const Login = () => {
       const { access, refresh } = res.data;
       localStorage.setItem("access", access);
       localStorage.setItem("refresh", refresh);
+      console.log({access});
       localStorage.setItem('wallet connect', false)
-      navigate("/home");
+      navigate("/landing");
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] text-white flex items-center justify-center">
+    <div className="w-screen h-screen bg-gradient-to-br from-[#28014e] via-[#72119f] to-[#240050] text-white flex items-center justify-center">
       <div className="w-full max-w-lg bg-[#1a1a2e] bg-opacity-90 backdrop-blur-lg rounded-2xl shadow-2xl p-10 px-12">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold">
