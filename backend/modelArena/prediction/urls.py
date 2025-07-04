@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RunPredictionView, LeaderboardView
-from .views2 import DistributePrizeView
+
 
 
 

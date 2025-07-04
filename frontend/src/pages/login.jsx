@@ -18,7 +18,7 @@ const Login = () => {
       localStorage.setItem("access", access);
       localStorage.setItem("refresh", refresh);
       localStorage.setItem('wallet connect', false)
-      navigate("/landing");
+      navigate("/wallet");
     } catch (error) {
       console.error("Login failed:", error);
     }

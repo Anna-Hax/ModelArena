@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { 
-  Clock, 
-  Trophy, 
-  Users, 
-  Download, 
-  Zap, 
-  Rocket, 
-  Target, 
-  Shield, 
+import {
+  Clock,
+  Trophy,
+  Users,
+  Download,
+  Zap,
+  Rocket,
+  Target,
+  Shield,
   Sparkles,
   ChevronRight,
   Loader2,
   X,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
@@ -46,9 +46,10 @@ const FancyHackathonLanding = () => {
       hackathon_dataset_url: "https://example.com/dataset.zip",
       prize_pool: "50 ETH",
       participants: 127,
-      description: "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!"
+      description:
+        "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
     };
-    
+
     setHackathon(mockHackathon);
     setStatus("ongoing");
     setTimer(3661);
@@ -76,7 +77,9 @@ const FancyHackathonLanding = () => {
         try {
           const hackathonDetails = await contract.hackathons(hackathonId);
           if (hackathonDetails && hackathonDetails.prizePool) {
-            const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+            const prizePoolInEth = ethers.utils.formatEther(
+              hackathonDetails.prizePool
+            );
             setPrizePool(prizePoolInEth);
           }
         } catch (err) {
@@ -147,7 +150,7 @@ const FancyHackathonLanding = () => {
     if (timer !== null && timer <= 10 && status !== "ended") {
       setPulseEffect(true);
       const pulseInterval = setInterval(() => {
-        setPulseEffect(prev => !prev);
+        setPulseEffect((prev) => !prev);
       }, 500);
       return () => clearInterval(pulseInterval);
     } else {
@@ -167,87 +170,91 @@ const FancyHackathonLanding = () => {
 
   // PAYMENT INTEGRATION - This is the key function
   const handleJoinAndEnter = async () => {
-  try {
-    setIsJoining(true);
-    setTxError("");
+    try {
+      setIsJoining(true);
+      setTxError("");
 
-    // Check if MetaMask is available
-    if (!window.ethereum) {
-      throw new Error("MetaMask is required to join the hackathon");
-    }
-
-    // Setup Web3 connection
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const network = await provider.getNetwork();
-
-    // ✅ Sepolia network check and switch
-    if (network.chainId !== 11155111) {
-      try {
-        await window.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0xaa36a7" }], // Hex for 11155111 (Sepolia)
-        });
-      } catch (switchError) {
-        throw new Error("Please switch to the Sepolia testnet in MetaMask.");
+      // ✅ Check if MetaMask is installed
+      if (!window.ethereum) {
+        setTxError("❌ MetaMask is required to join the hackathon.");
+        return;
       }
+
+      // ✅ Connect to Ethereum
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const network = await provider.getNetwork();
+
+      // ✅ Ensure Sepolia Testnet (chainId: 11155111)
+      if (network.chainId !== 11155111) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0xaa36a7" }],
+          });
+        } catch (switchError) {
+          setTxError("❌ Please switch to Sepolia testnet in MetaMask.");
+          return;
+        }
+      }
+
+      const signer = provider.getSigner();
+      const contract = await getArenaContract(signer);
+
+      // ✅ Fetch latest hackathon ID
+      const counter = await contract.hackathonCounter();
+      const hackathonId = counter.toNumber() -1 ;
+
+      console.log("📦 Joining hackathon with ID:", hackathonId);
+
+      // ✅ Send ETH to join hackathon
+      const tx = await contract.joinHackathon(hackathonId, {
+        value: ethers.utils.parseEther("0.0001"), // Stake
+        gasLimit: 150000,
+      });
+
+      console.log("📤 Transaction sent:", tx.hash);
+
+      // ✅ Wait for confirmation
+      const receipt = await tx.wait();
+      console.log("✅ Transaction confirmed:", receipt);
+
+      // Optional: Refresh on-chain data
+      setTimeout(() => {
+        console.log("🔄 Refreshing blockchain data...");
+        fetchOnChainData(); // Define this if not yet done
+      }, 3000);
+
+      // ✅ Navigate to dashboard
+      setShowModal(false);
+      navigate("/home");
+    } catch (err) {
+      console.error("❌ Join failed:", err);
+
+      if (err.code === 4001 || err.message.includes("user rejected")) {
+        setTxError("❌ Transaction was rejected by user.");
+      } else if (err.message.includes("insufficient funds")) {
+        setTxError("❌ Insufficient funds to join hackathon.");
+      } else if (err.message.includes("MetaMask")) {
+        setTxError("❌ MetaMask is required to join the hackathon.");
+      } else {
+        setTxError(`❌ Join failed: ${err.message}`);
+      }
+    } finally {
+      setIsJoining(false);
     }
-
-    const signer = provider.getSigner();
-    const contract = await getArenaContract(signer);
-
-    console.log("💰 Sending 1 ETH to contract - will trigger receive() function");
-
-    // Send 1 ETH payment to the contract
-    const tx = await signer.sendTransaction({
-      to: contract.address,
-      value: ethers.utils.parseEther("0.0001"), // Exactly 1 ETH
-      gasLimit: 100000,
-    });
-
-    console.log("📤 Transaction sent:", tx.hash);
-
-    // Wait for transaction confirmation
-    const receipt = await tx.wait();
-    console.log("✅ Transaction confirmed:", receipt);
-
-    // Refresh blockchain data after payment
-    setTimeout(() => {
-      console.log("🔄 Refreshing blockchain data...");
-      fetchOnChainData();
-    }, 3000);
-
-    // Close modal and navigate to main app
-    setShowModal(false);
-    console.log("✅ Successfully joined hackathon, navigating to home");
-    navigate("/home");
-
-  } catch (err) {
-    console.error("Join failed:", err);
-
-    if (err.message.includes("user rejected")) {
-      setTxError("❌ Transaction was rejected by user.");
-    } else if (err.message.includes("insufficient funds")) {
-      setTxError("❌ Insufficient funds to join hackathon.");
-    } else if (err.message.includes("MetaMask")) {
-      setTxError("❌ MetaMask is required to join the hackathon.");
-    } else {
-      setTxError(`❌ Join failed: ${err.message}`);
-    }
-  } finally {
-    setIsJoining(false);
-  }
-};
-
+  };
 
   const getStatusConfig = (status) => {
     switch (status) {
       case "ongoing":
         return {
-          icon: <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>,
+          icon: (
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          ),
           text: "Live Competition",
           color: "text-green-400",
           bgColor: "from-green-500/20 to-emerald-500/20",
-          borderColor: "border-green-500/30"
+          borderColor: "border-green-500/30",
         };
       case "upcoming":
         return {
@@ -255,7 +262,7 @@ const FancyHackathonLanding = () => {
           text: "Starting Soon",
           color: "text-yellow-400",
           bgColor: "from-yellow-500/20 to-orange-500/20",
-          borderColor: "border-yellow-500/30"
+          borderColor: "border-yellow-500/30",
         };
       case "ended":
         return {
@@ -263,7 +270,7 @@ const FancyHackathonLanding = () => {
           text: "Competition Ended",
           color: "text-blue-400",
           bgColor: "from-blue-500/20 to-purple-500/20",
-          borderColor: "border-blue-500/30"
+          borderColor: "border-blue-500/30",
         };
       default:
         return {
@@ -271,7 +278,7 @@ const FancyHackathonLanding = () => {
           text: "Unknown Status",
           color: "text-gray-400",
           bgColor: "from-gray-500/20 to-gray-500/20",
-          borderColor: "border-gray-500/30"
+          borderColor: "border-gray-500/30",
         };
     }
   };
@@ -295,7 +302,9 @@ const FancyHackathonLanding = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 text-center">
           <Loader2 className="w-12 h-12 text-purple-400 mx-auto mb-4 animate-spin" />
-          <div className="text-white text-lg font-semibold">Loading hackathon details...</div>
+          <div className="text-white text-lg font-semibold">
+            Loading hackathon details...
+          </div>
         </div>
       </div>
     );
@@ -325,7 +334,9 @@ const FancyHackathonLanding = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-6">
-            <div className={`flex items-center space-x-3 bg-gradient-to-r ${statusConfig.bgColor} backdrop-blur-sm px-6 py-3 rounded-full border ${statusConfig.borderColor}`}>
+            <div
+              className={`flex items-center space-x-3 bg-gradient-to-r ${statusConfig.bgColor} backdrop-blur-sm px-6 py-3 rounded-full border ${statusConfig.borderColor}`}
+            >
               {statusConfig.icon}
               <span className={`text-sm font-bold ${statusConfig.color}`}>
                 {statusConfig.text}
@@ -378,153 +389,163 @@ const FancyHackathonLanding = () => {
           </div>
         </div>
 */}
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {[
-            {
-              icon: Target,
-              title: "Real-time Evaluation",
-              description: "Your models are tested against live market data every 5 minutes",
-              color: "from-blue-500 to-cyan-500"
-            },
-            {
-              icon: Shield,
-              title: "Secure & Fair",
-              description: "Blockchain-based entry fees and transparent prize distribution",
-              color: "from-green-500 to-emerald-500"
-            },
-            {
-              icon: Zap,
-              title: "Instant Feedback",
-              description: "Get immediate accuracy scores and leaderboard updates",
-              color: "from-purple-500 to-pink-500"
-            }
-          ].map((feature, index) => (
-            <div key={index} className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:scale-105">
-              <div className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-4`}>
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-              <p className="text-gray-400">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Action Section */}
-        <div className="bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-blue-900/50 backdrop-blur-xl rounded-3xl p-8 border border-white/20 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Compete?</h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Join the participants and show your skills 
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            {hackathon.hackathon_dataset_url && (
-              <a
-                href={hackathon.hackathon_dataset_url}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-blue-500/50"
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {[
+              {
+                icon: Target,
+                title: "Real-time Evaluation",
+                description:
+                  "Your models are tested against live market data every 5 minutes",
+                color: "from-blue-500 to-cyan-500",
+              },
+              {
+                icon: Shield,
+                title: "Secure & Fair",
+                description:
+                  "Blockchain-based entry fees and transparent prize distribution",
+                color: "from-green-500 to-emerald-500",
+              },
+              {
+                icon: Zap,
+                title: "Instant Feedback",
+                description:
+                  "Get immediate accuracy scores and leaderboard updates",
+                color: "from-purple-500 to-pink-500",
+              },
+            ].map((feature, index) => (
+              <div
+                key={index}
+                className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:scale-105"
               >
-                <Download className="w-5 h-5" />
-                <span>Download Dataset</span>
-              </a>
-            )}
-
-            {status === "ongoing" && (
-              <button
-                onClick={handleOpenModal}
-                className="group flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50"
-              >
-                <Rocket className="w-5 h-5" />
-                <span>Enter Competition</span>
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Modal with Payment Integration */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl rounded-3xl max-w-md w-full shadow-2xl border border-white/20 relative overflow-hidden">
-            {/* Close Button */}
-            <button
-              onClick={handleCloseModal}
-              className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors duration-200"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Modal Content */}
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-
-              <h2 className="text-3xl font-bold mb-4">Join Competition</h2>
-              <p className="text-lg text-gray-300 mb-6">
-                Entry fee: <span className="font-bold text-green-400">0.0001 ETH</span>
-              </p>
-              <p className="text-sm text-gray-400 mb-6">
-                Your entry fee contributes to the prize pool and ensures fair competition. 
-                Make sure you have MetaMask installed and connected.
-              </p>
-
-              {txError && (
-                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mb-6">
-                  <div className="flex items-center space-x-2 text-red-400">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{txError}</span>
-                  </div>
+                <div
+                  className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-4`}
+                >
+                  <feature.icon className="w-6 h-6 text-white" />
                 </div>
+                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                <p className="text-gray-400">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Action Section */}
+          <div className="bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-blue-900/50 backdrop-blur-xl rounded-3xl p-8 border border-white/20 text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Compete?</h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Join the participants and show your skills
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {hackathon.hackathon_dataset_url && (
+                <a
+                  href={hackathon.hackathon_dataset_url}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-blue-500/50"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>Download Dataset</span>
+                </a>
               )}
 
-              <div className="flex gap-4">
+              {status === "ongoing" && (
                 <button
-                  onClick={handleJoinAndEnter}
-                  disabled={isJoining}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  onClick={handleOpenModal}
+                  className="group flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50"
                 >
-                  {isJoining ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Processing...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <Zap className="w-5 h-5" />
-                      <span>Pay & Enter</span>
-                    </div>
-                  )}
+                  <Rocket className="w-5 h-5" />
+                  <span>Enter Competition</span>
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                 </button>
-                <button
-                  onClick={handleCloseModal}
-                  className="flex-1 bg-white/10 hover:bg-white/20 px-6 py-4 rounded-full font-bold text-lg transition-all duration-300"
-                >
-                  Cancel
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </div>
-      )}
 
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
+        {/* Enhanced Modal with Payment Integration */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl rounded-3xl max-w-md w-full shadow-2xl border border-white/20 relative overflow-hidden">
+              {/* Close Button */}
+              <button
+                onClick={handleCloseModal}
+                className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors duration-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Modal Content */}
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Shield className="w-8 h-8 text-white" />
+                </div>
+
+                <h2 className="text-3xl font-bold mb-4">Join Competition</h2>
+                <p className="text-lg text-gray-300 mb-6">
+                  Entry fee:{" "}
+                  <span className="font-bold text-green-400">0.0001 ETH</span>
+                </p>
+                <p className="text-sm text-gray-400 mb-6">
+                  Your entry fee contributes to the prize pool and ensures fair
+                  competition. Make sure you have MetaMask installed and
+                  connected.
+                </p>
+
+                {txError && (
+                  <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mb-6">
+                    <div className="flex items-center space-x-2 text-red-400">
+                      <AlertCircle className="w-5 h-5" />
+                      <span>{txError}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleJoinAndEnter}
+                    disabled={isJoining}
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    {isJoining ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Processing...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center space-x-2">
+                        <Zap className="w-5 h-5" />
+                        <span>Pay & Enter</span>
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCloseModal}
+                    className="flex-1 bg-white/10 hover:bg-white/20 px-6 py-4 rounded-full font-bold text-lg transition-all duration-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <style jsx>{`
+          @keyframes float {
+            0%,
+            100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-15px);
+            }
           }
-          50% {
-            transform: translateY(-15px);
-          }
-        }
-      `}</style>
+        `}</style>
+      </div>
     </div>
-    </div>
-  )};
-
-
+  );
+};
 
 export default FancyHackathonLanding;

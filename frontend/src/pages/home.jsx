@@ -31,7 +31,7 @@ const Home = () => {
   const [txError, setTxError] = useState("");
   const [showPredictions, setShowPredictions] = useState(false);
   const [predictionStartTime, setPredictionStartTime] = useState(null);
-  const [renderKey, setRenderKey] = useState(null);
+  const [renderKey, setRenderKey] = useState(Date.now());
   const [isRunningPredictions, setIsRunningPredictions] = useState(false);
   const [currentHackathonId, setCurrentHackathonId] = useState(null);
   const [hackathonStatus, setHackathonStatus] = useState(null);
@@ -39,7 +39,6 @@ const Home = () => {
   const [csvData, setCsvData] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const csvDataUrl = `${import.meta.env.VITE_API_BASE_URL}/uploads/input_data_d.csv`;
-;
 
   const navigate = useNavigate();
     // Load CSV data and leaderboard
@@ -57,6 +56,8 @@ const Home = () => {
               .filter(row => row.timestamp && row.close)
               .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             setCsvData(parsedData);
+            // Update render key when new CSV data is loaded
+            setRenderKey(Date.now());
           },
         });
 
@@ -244,7 +245,7 @@ const Home = () => {
     return (
       <div className="mt-6 bg-gray-50 rounded-lg p-4">
         <div className="h-80 w-full">
-          <Line data={data} options={options} />
+          <Line key={`chart-${index}-${renderKey}`} data={data} options={options} />
         </div>
         <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
           <span>Model: {model.uploaded_by}</span>
@@ -254,6 +255,7 @@ const Home = () => {
       </div>
     );
   };
+  
   const navigateModelUpload = () => {
     if (!isHackathonActive) {
       alert("⛔ No active hackathon found. You cannot upload a model right now.");
@@ -370,6 +372,8 @@ const Home = () => {
               .filter((row) => row.timestamp && row.close)
               .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             setCsvData(parsedData);
+            // Update render key when new CSV data is loaded
+            setRenderKey(Date.now());
           },
         });
 
@@ -408,8 +412,6 @@ const Home = () => {
       setIsRunningPredictions(false);
     }
   };
-
-
 
   // Loading state
   if (loading) {
@@ -515,7 +517,7 @@ const Home = () => {
           disabled={isUploading}
           className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg mr-4 shadow-md transition"
         >
-          {isUploading ? "Processing..." : "📤 Upload Model (1 ETH)"}
+          {isUploading ? "Processing..." : "📤 Upload Model (0.0001 ETH)"}
         </button>
 
         <button
@@ -539,7 +541,7 @@ const Home = () => {
           <div className="grid gap-6">
             {models.map((model, index) => (
               <div
-                key={index}
+                key={`model-${index}-${renderKey}`}
                 className="bg-purple-900 bg-opacity-40 border border-purple-700 rounded-2xl p-6 hover:shadow-2xl transition"
               >
                 <div className="flex justify-between items-start mb-4">

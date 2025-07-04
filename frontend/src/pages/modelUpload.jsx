@@ -27,7 +27,9 @@ const ModelUpload = () => {
   useEffect(() => {
     const fetchHackathonStatus = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/hackathon/status/`);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/hackathon/status/`
+        );
         const data = response.data;
 
         if (data.status === "ongoing") {
@@ -93,7 +95,8 @@ const ModelUpload = () => {
       setIsJoining(true);
       setTxError("");
 
-      if (!window.ethereum) throw new Error("MetaMask is required to join the hackathon");
+      if (!window.ethereum)
+        throw new Error("MetaMask is required to join the hackathon");
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const network = await provider.getNetwork();
@@ -116,10 +119,9 @@ const ModelUpload = () => {
 
       await tx.wait();
       await fetchOnChainData();
-      setPaying(true);
+      return true;
     } catch (err) {
       console.error("Join failed:", err);
-      setPaying(false);
 
       if (err.message.includes("user rejected")) {
         setTxError("❌ Transaction was rejected by user.");
@@ -130,15 +132,16 @@ const ModelUpload = () => {
       } else {
         setTxError(`❌ Join failed: ${err.message}`);
       }
+      return false;
     } finally {
       setIsJoining(false);
     }
   };
 
   const handleUpload = async () => {
-    await handleUploadModelPayment();
+    const paid = await handleUploadModelPayment();
 
-    if (paying) {
+    if (paid) {
       if (!file) {
         alert("Please select a file to upload.");
         return;
@@ -177,14 +180,24 @@ const ModelUpload = () => {
         🧠 Upload Your Battle-Ready Model
       </h2>
       <p className="text-gray-300 mb-6 text-center">
-        Upload a <code>.zip</code> file containing <code>train.py</code>, <code>model.py</code>, and <code>requirements.txt</code>
+        Upload a <code>.zip</code> file containing <code>train.py</code>,{" "}
+        <code>model.py</code>, and <code>requirements.txt</code>
       </p>
 
       <div className="bg-gradient-to-br from-purple-900 to-[#310041] border border-purple-500 rounded-xl px-6 py-4 mb-8 w-full max-w-xl font-mono text-green-300 text-sm shadow-md">
         <p className="mb-1">user_upload.zip</p>
-        <p className="ml-4">├── <span className="text-white">train.py</span> <span className="text-gray-400"># Training logic</span></p>
-        <p className="ml-4">├── <span className="text-white">model.py</span> <span className="text-gray-400"># Prediction class</span></p>
-        <p className="ml-4">└── <span className="text-white">requirements.txt</span> <span className="text-gray-400"># Dependencies</span></p>
+        <p className="ml-4">
+          ├── <span className="text-white">train.py</span>{" "}
+          <span className="text-gray-400"># Training logic</span>
+        </p>
+        <p className="ml-4">
+          ├── <span className="text-white">model.py</span>{" "}
+          <span className="text-gray-400"># Prediction class</span>
+        </p>
+        <p className="ml-4">
+          └── <span className="text-white">requirements.txt</span>{" "}
+          <span className="text-gray-400"># Dependencies</span>
+        </p>
       </div>
 
       <input
