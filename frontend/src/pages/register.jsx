@@ -14,7 +14,7 @@ const Register = () => {
     e.preventDefault();
     try {
       // eslint-disable-next-line no-unused-vars
-      const res = await axios.post("http://localhost:8000/auth/register/", form);
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/register/`, form);
       
       navigate("/login");
     } catch (error) {

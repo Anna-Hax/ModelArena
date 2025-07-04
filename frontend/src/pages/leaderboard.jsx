@@ -7,7 +7,7 @@ const Leaderboard = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8000/prediction/leaderboard/")
+      .get(`${import.meta.env.VITE_API_BASE_URL}/prediction/leaderboard/`)
       .then((response) => {
         setData(response.data.leaderboard);
         setLoading(false);
@@ -41,6 +41,10 @@ const Leaderboard = () => {
   };
 
   return (
+
+    <div>
+
+    
     <div className="min-h-screen w-screen pt-32 pb-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] text-white">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
@@ -200,6 +204,7 @@ const Leaderboard = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

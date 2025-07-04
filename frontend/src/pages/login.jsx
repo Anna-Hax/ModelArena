@@ -13,13 +13,12 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:8000/auth/token/", form);
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/token/`, form);
       const { access, refresh } = res.data;
       localStorage.setItem("access", access);
       localStorage.setItem("refresh", refresh);
-      console.log({access});
       localStorage.setItem('wallet connect', false)
-      navigate("/landing");
+      navigate("/wallet");
     } catch (error) {
       console.error("Login failed:", error);
     }
