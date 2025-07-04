@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Django stuff
+*.sqlite3
+*.log
+*.pot
+*.pyc
+media/
+staticfiles/  # if you collectstatic locally
+db.sqlite3
+
+# IDEs/editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker itself
+.dockerignore
+Dockerfile
+
+# Env files (only if you're building in a public/shared CI environment)
+.env
+.env.local

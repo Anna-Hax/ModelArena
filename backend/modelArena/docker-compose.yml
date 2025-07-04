@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  django:
+    build: .
+    container_name: django_app
+    volumes:
+      - .:/app
+      - ./db.sqlite3:/app/db.sqlite3
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    env_file:
+      - .env
+
+  celery:
+    build: .
+    container_name: celery_worker
+    command: celery -A modelArena worker -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - django
+      - redis
+    env_file:
+      - .env
+
+  beat:
+    build: .
+    container_name: celery_beat
+    command: celery -A modelArena beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    depends_on:
+      - django
+      - redis
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
