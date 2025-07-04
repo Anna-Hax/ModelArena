@@ -1,8 +1,13 @@
 from web3 import Web3
 from .web3 import web3, account, CHAIN_ID, PUBLIC_ADDRESS
 from .arena_abi import arena_abi
+import os
+from dotenv import load_dotenv
 
-ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+load_dotenv()
+
+contract_add = os.getenv("contract_address")
+ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address(contract_add)
 
 contract = web3.eth.contract(address=ARENA_CONTRACT_ADDRESS, abi=arena_abi)
 
