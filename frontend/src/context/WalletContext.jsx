@@ -51,7 +51,7 @@ export const WalletProvider = ({ children }) => {
       });
 
       const instance = await web3Modal.connect();
-      const web3Provider = new ethers.BrowserProvider(instance); // ✅ v6
+      const web3Provider = new ethers.utils.BrowserProvider(instance); // ✅ v6
       const signer = await web3Provider.getSigner();
       const walletAddress = await signer.getAddress();
 

@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { getArenaContract } from "../utils/contract";
 import * as ethers from "ethers";
+
 const HackathonLanding = () => {
   const [hackathon, setHackathon] = useState(null);
   const [error, setError] = useState("");
@@ -11,6 +12,7 @@ const HackathonLanding = () => {
   const [showModal, setShowModal] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [txError, setTxError] = useState("");
+  const [hasFulfilled, setHasFulfilled] = useState(false); // ✅ avoid duplicate fulfill call
   const navigate = useNavigate();
 
   const formatTime = (seconds) => {
@@ -23,7 +25,6 @@ const HackathonLanding = () => {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // 🧠 Fetch status from backend every 15s
   useEffect(() => {
     const fetchHackathon = async () => {
       try {
@@ -49,7 +50,7 @@ const HackathonLanding = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // ⏱️ Countdown locally
+  // ⏱️ Countdown and trigger fulfill
   useEffect(() => {
     if (timer === null || timer <= 0 || !hackathon) return;
 
@@ -63,16 +64,31 @@ const HackathonLanding = () => {
             return hackathon.duration_minutes * 60;
           } else if (status === "ongoing") {
             setStatus("ended");
+
+            // ✅ Trigger fulfill only once
+            if (!hasFulfilled) {
+              axios
+                .post("http://localhost:8000/arena/fulfill/", {
+                  hackathon_id: hackathon.id,
+                })
+                .then((res) => {
+                  console.log("✅ Fulfill triggered:", res.data);
+                  setHasFulfilled(true);
+                })
+                .catch((err) => {
+                  console.error("❌ Fulfill failed:", err);
+                });
+            }
+
             return 0;
           }
         }
-
         return prevTime - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timer, status, hackathon]);
+  }, [timer, status, hackathon, hasFulfilled]);
 
   const handleOpenModal = () => {
     setShowModal(true);
@@ -83,55 +99,51 @@ const HackathonLanding = () => {
     setShowModal(false);
     setTxError("");
   };
-const handleJoinAndEnter = async () => {
-  try {
-    setIsJoining(true);
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum); // ✅ v5 syntax
-    const signer = provider.getSigner();
-    const userAddress = await signer.getAddress();
+  const handleJoinAndEnter = async () => {
+    try {
+      setIsJoining(true);
 
-    const contract = await getArenaContract(signer); // Pass signer to write
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const userAddress = await signer.getAddress();
 
-    // ✅ Get the latest hackathon ID
-    const counter = await contract.hackathonCounter();
-    if (counter.toNumber() === 0) {
-      setTxError("❌ No active hackathon on blockchain.");
-      return;
-    }
+      const contract = await getArenaContract(signer);
 
-    const hackathonId = counter.toNumber() - 1;
+      const counter = await contract.hackathonCounter();
+      if (counter.toNumber() === 0) {
+        setTxError("❌ No active hackathon on blockchain.");
+        return;
+      }
 
-    // ✅ Check if user already joined
-    const players = await contract.getPlayers(hackathonId);
-    const alreadyJoined = players.some(
-      (addr) => addr.toLowerCase() === userAddress.toLowerCase()
-    );
+      const hackathonId = counter.toNumber() - 1;
 
-    if (alreadyJoined) {
-      console.log("✅ Already joined, skipping payment");
+      const players = await contract.getPlayers(hackathonId);
+      const alreadyJoined = players.some(
+        (addr) => addr.toLowerCase() === userAddress.toLowerCase()
+      );
+
+      if (alreadyJoined) {
+        console.log("✅ Already joined, skipping payment");
+        setShowModal(false);
+        navigate("/home");
+        return;
+      }
+
+      const tx = await contract.joinHackathon(hackathonId, {
+        value: ethers.utils.parseEther("1.0"),
+      });
+      await tx.wait();
+
       setShowModal(false);
       navigate("/home");
-      return;
+    } catch (err) {
+      console.error("Join failed:", err);
+      setTxError("❌ Join failed. " + (err?.message || ""));
+    } finally {
+      setIsJoining(false);
     }
-
-    // ❌ Not joined yet, proceed to pay & join
-    const tx = await contract.joinHackathon(hackathonId, {
-      value: ethers.utils.parseEther("1.0"),
-    });
-    await tx.wait();
-
-    setShowModal(false);
-    navigate("/home");
-  } catch (err) {
-    console.error("Join failed:", err);
-    setTxError("❌ Join failed. " + (err?.message || ""));
-  } finally {
-    setIsJoining(false);
-  }
-};
-
-
+  };
 
   const isLastTen = timer !== null && timer <= 10 && status !== "ended";
 
@@ -194,7 +206,9 @@ const handleJoinAndEnter = async () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full shadow-lg text-center">
             <h2 className="text-2xl font-bold mb-4">Join Hackathon</h2>
-            <p className="mb-4">You need to pay <strong>1 ETH</strong> as entry fee.</p>
+            <p className="mb-4">
+              You need to pay <strong>1 ETH</strong> as entry fee.
+            </p>
 
             {txError && <p className="text-red-600">{txError}</p>}
 
@@ -221,5 +235,3 @@ const handleJoinAndEnter = async () => {
 };
 
 export default HackathonLanding;
-
-
