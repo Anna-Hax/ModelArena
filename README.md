@@ -111,18 +111,4 @@ Tests written for:
 
 ---
 
-## 🙌 Contributing
 
-PRs are welcome. Please open an issue to discuss your idea before submitting.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-## 🚀 Vision
-
-ModelArena aims to be the **fantasy league for ML models**. By mixing on-chain trust with real-world model performance, we bring together developers, investors, and evaluators into a single dynamic ecosystem.
