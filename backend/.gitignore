@@ -1,1 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+*.egg-info/
+*.egg
+
+# Environment
+.env
+.venv/
+venv/
+ENV/
+env.bak/
+*.env.*
+
+# Django stuff
+db.sqlite3
+media/
+staticfiles/
+*.log
+
+# Redis dump (if accidentally saved)
+dump.rdb
+
+# Celery related
+celerybeat-schedule
+celerybeat.pid
+
+# VSCode/IDE/editor folders
+.vscode/
+.idea/
+*.swp
+
+# CSV/Excel/Data files
+*.csv
+*.xlsx
+*.xls
+
+# OS/macOS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+<<<<<<< HEAD
 .venv
+.csv
+=======
+>>>>>>> origin/izzy
