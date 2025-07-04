@@ -16,6 +16,9 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ethers } from "ethers";
+import { getArenaContract } from "../utils/contract";
+
 const FancyHackathonLanding = () => {
   const navigate = useNavigate();
   const [hackathon, setHackathon] = useState(null);
@@ -28,11 +31,13 @@ const FancyHackathonLanding = () => {
   const [hasFulfilled, setHasFulfilled] = useState(false);
   const [particles, setParticles] = useState([]);
   const [pulseEffect, setPulseEffect] = useState(false);
+  const [currentHackathonId, setCurrentHackathonId] = useState(null);
+  const [prizePool, setPrizePool] = useState("0");
+  const [participants, setParticipants] = useState([]);
 
   // Mock data for demonstration
   useEffect(() => {
     const mockHackathon = {
-      
       id: 1,
       title: "AI Stock Prediction Challenge 2025",
       status: "ongoing",
@@ -48,6 +53,47 @@ const FancyHackathonLanding = () => {
     setStatus("ongoing");
     setTimer(3661);
   }, []);
+
+  // Fetch blockchain data
+  const fetchOnChainData = async () => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = await getArenaContract();
+
+      let hackathonId;
+      if (currentHackathonId !== null) {
+        hackathonId = currentHackathonId;
+      } else {
+        const counter = await contract.hackathonCounter();
+        hackathonId = counter.toNumber() - 1;
+        setCurrentHackathonId(hackathonId);
+      }
+
+      if (hackathonId >= 0) {
+        const players = await contract.getPlayers(hackathonId);
+        setParticipants(players);
+
+        try {
+          const hackathonDetails = await contract.hackathons(hackathonId);
+          if (hackathonDetails && hackathonDetails.prizePool) {
+            const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+            setPrizePool(prizePoolInEth);
+          }
+        } catch (err) {
+          console.error("Error fetching hackathon details:", err);
+        }
+      }
+    } catch (err) {
+      console.error("Blockchain fetch failed:", err);
+    }
+  };
+
+  // Fetch blockchain data on component mount
+  useEffect(() => {
+    fetchOnChainData();
+    const interval = setInterval(fetchOnChainData, 15000);
+    return () => clearInterval(interval);
+  }, [currentHackathonId]);
 
   // Generate floating particles
   useEffect(() => {
@@ -119,24 +165,79 @@ const FancyHackathonLanding = () => {
     setTxError("");
   };
 
+  // PAYMENT INTEGRATION - This is the key function
   const handleJoinAndEnter = async () => {
-    try {
-      setIsJoining(true);
-      // Simulate transaction processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock success
-      setShowModal(false);
-      console.log("✅ Successfully joined hackathon");
-      navigate("/home")
-      
-    } catch (err) {
-      console.error("Join failed:", err);
-      setTxError("❌ Join failed. " + (err?.message || ""));
-    } finally {
-      setIsJoining(false);
+  try {
+    setIsJoining(true);
+    setTxError("");
+
+    // Check if MetaMask is available
+    if (!window.ethereum) {
+      throw new Error("MetaMask is required to join the hackathon");
     }
-  };
+
+    // Setup Web3 connection
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const network = await provider.getNetwork();
+
+    // ✅ Sepolia network check and switch
+    if (network.chainId !== 11155111) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0xaa36a7" }], // Hex for 11155111 (Sepolia)
+        });
+      } catch (switchError) {
+        throw new Error("Please switch to the Sepolia testnet in MetaMask.");
+      }
+    }
+
+    const signer = provider.getSigner();
+    const contract = await getArenaContract(signer);
+
+    console.log("💰 Sending 1 ETH to contract - will trigger receive() function");
+
+    // Send 1 ETH payment to the contract
+    const tx = await signer.sendTransaction({
+      to: contract.address,
+      value: ethers.utils.parseEther("0.0001"), // Exactly 1 ETH
+      gasLimit: 100000,
+    });
+
+    console.log("📤 Transaction sent:", tx.hash);
+
+    // Wait for transaction confirmation
+    const receipt = await tx.wait();
+    console.log("✅ Transaction confirmed:", receipt);
+
+    // Refresh blockchain data after payment
+    setTimeout(() => {
+      console.log("🔄 Refreshing blockchain data...");
+      fetchOnChainData();
+    }, 3000);
+
+    // Close modal and navigate to main app
+    setShowModal(false);
+    console.log("✅ Successfully joined hackathon, navigating to home");
+    navigate("/home");
+
+  } catch (err) {
+    console.error("Join failed:", err);
+
+    if (err.message.includes("user rejected")) {
+      setTxError("❌ Transaction was rejected by user.");
+    } else if (err.message.includes("insufficient funds")) {
+      setTxError("❌ Insufficient funds to join hackathon.");
+    } else if (err.message.includes("MetaMask")) {
+      setTxError("❌ MetaMask is required to join the hackathon.");
+    } else {
+      setTxError(`❌ Join failed: ${err.message}`);
+    }
+  } finally {
+    setIsJoining(false);
+  }
+};
+
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -242,14 +343,41 @@ const FancyHackathonLanding = () => {
           <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
             {hackathon.description}
           </p>
+
+          {/* Live Stats 
+          <div className="flex justify-center space-x-8 mb-8">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20">
+              <div className="flex items-center space-x-2">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <div className="text-2xl font-bold text-green-400">{prizePool} ETH</div>
+                  <div className="text-sm text-gray-400">Prize Pool</div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20">
+              <div className="flex items-center space-x-2">
+                <Users className="w-5 h-5 text-blue-400" />
+                <div>
+                  <div className="text-2xl font-bold text-blue-400">{participants.length}</div>
+                  <div className="text-sm text-gray-400">Participants</div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-5 h-5 text-purple-400" />
+                <div>
+                  <div className={`text-2xl font-bold ${isLastTen ? 'text-red-400 animate-pulse' : 'text-purple-400'}`}>
+                    {formatTime(timer)}
+                  </div>
+                  <div className="text-sm text-gray-400">Time Left</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Timer & Status Card */}
-
-        </div>
-
+*/}
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
@@ -286,7 +414,7 @@ const FancyHackathonLanding = () => {
         <div className="bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-blue-900/50 backdrop-blur-xl rounded-3xl p-8 border border-white/20 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Compete?</h2>
           <p className="text-xl text-gray-300 mb-8">
-            Join the participants and show you skills 
+            Join the participants and show your skills 
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -317,7 +445,7 @@ const FancyHackathonLanding = () => {
         </div>
       </div>
 
-      {/* Enhanced Modal */}
+      {/* Enhanced Modal with Payment Integration */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-xl rounded-3xl max-w-md w-full shadow-2xl border border-white/20 relative overflow-hidden">
@@ -337,10 +465,11 @@ const FancyHackathonLanding = () => {
 
               <h2 className="text-3xl font-bold mb-4">Join Competition</h2>
               <p className="text-lg text-gray-300 mb-6">
-                Entry fee: <span className="font-bold text-green-400">1 ETH</span>
+                Entry fee: <span className="font-bold text-green-400">0.0001 ETH</span>
               </p>
               <p className="text-sm text-gray-400 mb-6">
-                Your entry fee contributes to the prize pool and ensures fair competition
+                Your entry fee contributes to the prize pool and ensures fair competition. 
+                Make sure you have MetaMask installed and connected.
               </p>
 
               {txError && (
@@ -393,7 +522,9 @@ const FancyHackathonLanding = () => {
         }
       `}</style>
     </div>
-  );
-};
+    </div>
+  )};
+
+
 
 export default FancyHackathonLanding;

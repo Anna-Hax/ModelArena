@@ -1,325 +1,207 @@
-import React from 'react';
-import { Clock, Users, Trophy, Star, Upload, Zap, Shield, Award } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-export default function MLModelsBattle() {
-    const navigate = useNavigate();
-    const login = () => {
-        navigate("/login");
-    };
+const Leaderboard = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    const register = () => {
-        navigate("/register");
-    };
+  useEffect(() => {
+    axios
+      .get(`${import.meta.env.VITE_API_BASE_URL}/prediction/leaderboard/`)
+      .then((response) => {
+        setData(response.data.leaderboard);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to load leaderboard:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const getRankIcon = (rank) => {
+    switch (rank) {
+      case 1: return "🏆";
+      case 2: return "🥈";
+      case 3: return "🥉";
+      default: return "🏅";
+    }
+  };
+
+  const getRankStyle = (rank) => {
+    switch (rank) {
+      case 1:
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-black shadow-lg shadow-yellow-400/50";
+      case 2:
+        return "bg-gradient-to-r from-gray-300 to-gray-500 text-black shadow-lg shadow-gray-400/50";
+      case 3:
+        return "bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-lg shadow-orange-400/50";
+      default:
+        return "bg-white/10 text-purple-100 hover:bg-white/20 border border-white/20";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-1000 from-[#1e003e] via-[#2d005f] to-[#44007e] text-white">
-      {/* Header */}
-      <header className="flex items-center justify-between p-6 border-b border-purple-700/30">
-        <div className="flex items-center space-x-8">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-            <span className="text-xl font-bold">ModelArena</span>
-          </div>
-          <nav className="flex space-x-6 text-gray-300">
-            <a href="#" className="text-gray-300 hover:text-white">Features</a>
-            <a href="#" className="text-gray-300 hover:text-white">How It Works</a>
-            <a href="#" className="text-gray-300 hover:text-white">Leaderboard</a>
-          </nav>
-        </div>
-        <button className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-2 rounded-full font-semibold">
-          Enter Arena
-        </button>
-      </header>
-
-      {/* Main Content */}
-      <main className="px-6 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-4">
-            <div className="flex items-center space-x-2 bg-purple-700/30 px-4 py-2 rounded-full">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-sm">Live Tournament in Progress</span>
+    <div className="min-h-screen w-screen pt-32 pb-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] text-white">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-4 mb-4">
+            <div className="p-3 bg-purple-600/30 rounded-full border border-purple-400/50">
+              <svg className="w-8 h-8 text-purple-300" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+              </svg>
             </div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-200 to-white bg-clip-text text-transparent">
+              Model Leaderboard
+            </h1>
           </div>
-          
-          <h1 className="text-6xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">ML Models</span>
-            <br />
-            <span className="text-white">Battle for Glory</span>
-          </h1>
-          
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Upload your ML models to predict stock prices in real-time competitions.
-            <br />
-            Battle every 5 minutes, earn reward points, and win from blockchain-secured
-            <br />
-            prize pools.
+          <p className="text-purple-300 text-lg max-w-2xl mx-auto">
+            Discover the top-performing models ranked by accuracy and performance metrics
           </p>
-          
-          <div className="flex justify-center space-x-4">
-            <button onClick={register} className="bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-3 rounded-full font-semibold">
-              Register Warriors
-            </button>
-            <button onClick={login} className="border border-purple-400 px-8 py-3 rounded-full font-semibold hover:bg-purple-700/30">
-              Login to Unleash
-            </button>
-          </div>
         </div>
 
-        {/* Live Arena Stats */}
-        <div className="flex justify-center mb-16">
-          <div className="bg-purple-800/30 rounded-xl p-6 backdrop-blur-sm">
-            <div className="flex items-center justify-center mb-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-              <span className="text-sm font-semibold">LIVE ARENA</span>
-            </div>
-            <div className="grid grid-cols-4 gap-8 text-center">
-              <div>
-                <div className="text-2xl font-bold text-green-400">₹2,847.50</div>
-                <div className="text-sm text-gray-400">Current Pool</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">127</div>
-                <div className="text-sm text-gray-400">Models Competing</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold">2:34</div>
-                <div className="text-sm text-gray-400">Next Round</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">₹9,450</div>
-                <div className="text-sm text-gray-400">Prize Pool</div>
+        {/* Content */}
+        <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 shadow-2xl p-8">
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="inline-flex items-center gap-3 text-purple-300">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-300 border-t-transparent"></div>
+                <span className="text-lg">Loading leaderboard...</span>
               </div>
             </div>
-          </div>
-        </div>
+          ) : data.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="mb-6">
+                <svg className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-semibold text-purple-200 mb-2">No Results Yet</h3>
+              <p className="text-purple-400 text-lg">
+                Be the first to submit a model and claim the top spot!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full border-separate border-spacing-y-3">
+                  <thead>
+                    <tr className="text-purple-300 text-sm uppercase tracking-wider">
+                      <th className="text-left py-4 px-6">Rank</th>
+                      <th className="text-left py-4 px-6">Model</th>
+                      <th className="text-left py-4 px-6">Uploader</th>
+                      <th className="text-left py-4 px-6">Avg Error</th>
+                      <th className="text-left py-4 px-6">Performance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((entry, idx) => (
+                      <tr
+                        key={idx}
+                        className={`rounded-2xl transition-all duration-300 hover:scale-[1.02] transform ${getRankStyle(entry.rank)}`}
+                      >
+                        <td className="py-6 px-6 rounded-l-2xl">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{getRankIcon(entry.rank)}</span>
+                            <span className="text-2xl font-bold">#{entry.rank}</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6">
+                          <div className="font-semibold text-lg truncate max-w-xs">
+                            {entry.model_file}
+                          </div>
+                        </td>
+                        <td className="py-6 px-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                              {entry.uploaded_by.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-medium">{entry.uploaded_by}</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6">
+                          <div className="text-xl font-bold">
+                            {entry.average_error.toFixed(3)}
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 rounded-r-2xl">
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-black/20 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-green-400 to-blue-400 rounded-full"
+                                style={{ width: `${Math.max(10, 100 - (entry.average_error * 100))}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium">
+                              {Math.max(10, 100 - (entry.average_error * 100)).toFixed(0)}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-4 gap-8 mb-16 text-center">
-          <div>
-            <div className="text-4xl font-bold mb-2">2,847</div>
-            <div className="text-gray-400">Active Models</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2">50K+</div>
-            <div className="text-gray-400">Live Predictions/Day</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2">$12.5K</div>
-            <div className="text-gray-400">Prize Pool Today</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2">87.3%</div>
-            <div className="text-gray-400">Avg Accuracy</div>
-          </div>
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-4">
+                {data.map((entry, idx) => (
+                  <div
+                    key={idx}
+                    className={`rounded-2xl p-6 transition-all duration-300 ${getRankStyle(entry.rank)}`}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{getRankIcon(entry.rank)}</span>
+                        <span className="text-2xl font-bold">#{entry.rank}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold">{entry.average_error.toFixed(3)}</div>
+                        <div className="text-sm opacity-75">Avg Error</div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-sm opacity-75 mb-1">Model</div>
+                        <div className="font-semibold text-lg truncate">{entry.model_file}</div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-sm opacity-75 mb-1">Uploader</div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                            {entry.uploaded_by.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-medium">{entry.uploaded_by}</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-sm opacity-75 mb-2">Performance</div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-black/20 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-green-400 to-blue-400 rounded-full"
+                              style={{ width: `${Math.max(10, 100 - (entry.average_error * 100))}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm font-medium">
+                            {Math.max(10, 100 - (entry.average_error * 100)).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Features Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">
-            Battle-Tested <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">Features</span>
-          </h2>
-          <p className="text-xl text-gray-300 mb-12">
-            Experience the most advanced ML model competition platform with
-            <br />
-            real-time evaluation and blockchain rewards
-          </p>
-          
-          <div className="grid grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-700/30 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Real-Time Prediction Battles</h3>
-              <p className="text-gray-400">
-                Submit your models and compete in real-time
-                5-minute prediction battles against the
-                world's accuracy
-                legends
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-700/30 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Trophy className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Competitive Arena System</h3>
-              <p className="text-gray-400">
-                Climb the leaderboard, earn
-                tournament pay-outs,
-                rank, and play from
-                shared prize pools
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-700/30 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Upload className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Upload & Train Models</h3>
-              <p className="text-gray-400">
-                Easily upload your models
-                to secure containers
-                with normalized training
-                on historical data
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-700/30 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-purple-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Blockchain Rewards</h3>
-              <p className="text-gray-400">
-                Transparent prize
-                distribution through
-                smart contracts with
-                staking opportunities
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* How The Arena Works */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">
-            How The <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">Arena Works</span>
-          </h2>
-          <p className="text-xl text-gray-300 mb-12">
-            From model upload to victory celebration - here's your path to ML glory
-          </p>
-          
-          <div className="grid grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold">01</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Upload Model</h3>
-              <p className="text-gray-400">
-                Upload your .zip with train.py,
-                model.py, and requirements.txt
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold">02</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Join Arena</h3>
-              <p className="text-gray-400">
-                Pay entry fee and enter the
-                prediction tournaments
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold">03</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Battle & Win</h3>
-              <p className="text-gray-400">
-                Compete in 5-minute intervals and
-                earn reward points
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Live Arena Preview */}
-        <div className="bg-gradient-to-r from-purple-800/50 to-pink-800/50 rounded-xl p-8 mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-2">Live Arena Preview</h2>
-            <p className="text-gray-300">Watch models battle in real-time prediction contests</p>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-8 mb-8">
-            <div className="bg-purple-900/50 rounded-lg p-6 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <div className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></div>
-                <span className="text-sm font-semibold">WINNING</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">StockMaster Pro</h3>
-              <div className="text-3xl font-bold text-green-400 mb-1">94.2% Accuracy</div>
-              <div className="text-sm text-gray-400">127 Predictions</div>
-            </div>
-            
-            <div className="bg-purple-900/50 rounded-lg p-6 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <div className="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
-                <span className="text-sm font-semibold">COMPETING</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">TrendFollower AI</h3>
-              <div className="text-3xl font-bold text-yellow-400 mb-1">89.7% Accuracy</div>
-              <div className="text-sm text-gray-400">89 Predictions</div>
-            </div>
-            
-            <div className="bg-purple-900/50 rounded-lg p-6 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
-                <span className="text-sm font-semibold">STRUGGLING</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">QuickPredict</h3>
-              <div className="text-3xl font-bold text-red-400 mb-1">76.3% Accuracy</div>
-              <div className="text-sm text-gray-400">43 Predictions</div>
-            </div>
-          </div>
-          
-          <div className="text-center">
-            <button className="bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-3 rounded-full font-semibold">
-              Join Live Arena
-            </button>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <footer className="border-t border-purple-700/30 pt-12">
-          <div className="grid grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                <span className="text-lg font-bold">ModelArena</span>
-              </div>
-              <p className="text-gray-400 text-sm">
-                The premier ML model competition platform with real-time evaluation and blockchain rewards.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Platform</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white">How It Works</a></li>
-                <li><a href="#" className="hover:text-white">Upload Models</a></li>
-                <li><a href="#" className="hover:text-white">Live Arena</a></li>
-                <li><a href="#" className="hover:text-white">Leaderboard</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Community</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white">Discord</a></li>
-                <li><a href="#" className="hover:text-white">Twitter</a></li>
-                <li><a href="#" className="hover:text-white">GitHub</a></li>
-                <li><a href="#" className="hover:text-white">Documentation</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white">Help Center</a></li>
-                <li><a href="#" className="hover:text-white">API Docs</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
-                <li><a href="#" className="hover:text-white">Status</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="mt-8 pt-8 border-t border-purple-700/30 text-center text-gray-400 text-sm">
-            © 2025 ModelArena. Revolutionizing ML model evaluation through competitive gaming.
-          </div>
-        </footer>
-      </main>
+      </div>
     </div>
   );
-}
+};
+
+export default Leaderboard;

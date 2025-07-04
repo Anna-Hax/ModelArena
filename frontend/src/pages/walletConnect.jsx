@@ -14,7 +14,7 @@ const ConnectWallet = () => {
           const access = localStorage.getItem('access');
 
           const res = await axios.post(
-            'http://localhost:8000/auth/save-wallet/',
+            `${import.meta.env.VITE_API_BASE_URL}/auth/save-wallet/`,
             { wallet_address: address },
             {
               headers: {

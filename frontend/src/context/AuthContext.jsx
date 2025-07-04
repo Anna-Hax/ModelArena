@@ -13,7 +13,7 @@ const RequireAuth = () => {
       return;
     }
 
-    axios.get("http://localhost:8000/auth/get_user/", {
+    axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/get_user/`, {
       headers: { Authorization: `Bearer ${access}` },
     }).catch(() => navigate("/login"));
   }, [navigate]);

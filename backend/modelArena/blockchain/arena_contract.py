@@ -2,7 +2,7 @@ from web3 import Web3
 from .web3 import web3, account, CHAIN_ID, PUBLIC_ADDRESS
 from .arena_abi import arena_abi
 
-ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address("0x574c0D83dDAD9Bc1f6b881d9d08525ebE574BBE1")
 
 contract = web3.eth.contract(address=ARENA_CONTRACT_ADDRESS, abi=arena_abi)
 

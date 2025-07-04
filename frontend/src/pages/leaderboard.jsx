@@ -7,7 +7,7 @@ const Leaderboard = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8000/prediction/leaderboard/")
+      .get(`${import.meta.env.VITE_API_BASE_URL}/prediction/leaderboard/`)
       .then((response) => {
         setData(response.data.leaderboard);
         setLoading(false);

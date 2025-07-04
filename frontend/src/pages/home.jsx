@@ -25,8 +25,9 @@ const Home = () => {
   const [participants, setParticipants] = useState([]);
   const [prizePool, setPrizePool] = useState("0");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState("");
   const [txError, setTxError] = useState("");
   const [showPredictions, setShowPredictions] = useState(false);
   const [predictionStartTime, setPredictionStartTime] = useState(null);
@@ -37,11 +38,11 @@ const Home = () => {
   const [isHackathonActive, setIsHackathonActive] = useState(false);
   const [csvData, setCsvData] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
-  const csvDataUrl = "http://localhost:8000/uploads/input_data_d.csv";
+  const csvDataUrl = `${import.meta.env.VITE_API_BASE_URL}/uploads/input_data_d.csv`;
+;
 
   const navigate = useNavigate();
-
-  // Load CSV data and leaderboard
+    // Load CSV data and leaderboard
   useEffect(() => {
     const loadChartData = async () => {
       try {
@@ -60,7 +61,7 @@ const Home = () => {
         });
 
         // Fetch leaderboard data
-        const response = await fetch("http://localhost:8000/prediction/leaderboard/");
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prediction/leaderboard/`);
         const data = await response.json();
         setLeaderboard(data.leaderboard || []);
       } catch (err) {
@@ -253,16 +254,18 @@ const Home = () => {
       </div>
     );
   };
+  const navigateModelUpload = () => {
+    if (!isHackathonActive) {
+      alert("⛔ No active hackathon found. You cannot upload a model right now.");
+      return;
+    }
+    navigate("/UploadModel");
+  };
 
-  // Check hackathon status from Django backend
   useEffect(() => {
     const fetchHackathonStatus = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:8000/hackathon/status/"
-        );
-        console.log("🔍 Hackathon status response:", response.data);
-
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/hackathon/status/`);
         if (response.data.status === "ongoing") {
           setHackathonStatus("ongoing");
           setHackathonTitle(response.data.title);
@@ -291,18 +294,12 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Initial load - fetch model info only if hackathon is active
   useEffect(() => {
-    if (!isHackathonActive) {
-      setLoading(false);
-      return;
-    }
-
     const fetchInitialData = async () => {
       try {
         const access = localStorage.getItem("access");
         const modelsRes = await axios.post(
-          "http://localhost:8000/prediction/run-prediction/",
+          `${import.meta.env.VITE_API_BASE_URL}/prediction/run-prediction/`,
           { only_model_info: true },
           { headers: { Authorization: `Bearer ${access}` } }
         );
@@ -322,151 +319,79 @@ const Home = () => {
       }
     };
 
-    fetchInitialData();
+    if (isHackathonActive) {
+      fetchInitialData();
+    } else {
+      setLoading(false);
+    }
   }, [isHackathonActive]);
 
-  // CORRECTED BLOCKCHAIN DATA FETCHING
-  const fetchOnChainData = async () => {
-    try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = await getArenaContract();
-
-      let hackathonId;
-
-      if (currentHackathonId !== null) {
-        hackathonId = currentHackathonId;
-      } else {
-        const counter = await contract.hackathonCounter();
-        hackathonId = counter.toNumber() - 1;
-        setCurrentHackathonId(hackathonId);
-      }
-
-      console.log(
-        `📊 Fetching blockchain data for hackathon ID: ${hackathonId}`
-      );
-
-      if (hackathonId < 0) {
-        console.log("No hackathons created yet");
-        setParticipants([]);
-        setPrizePool("0");
-        setCurrentHackathonId(null);
-        return;
-      }
-
-      setCurrentHackathonId(hackathonId);
-
-      const players = await contract.getPlayers(hackathonId);
-      console.log(`👥 Players in hackathon ${hackathonId}:`, players);
-
-      try {
-        const hackathonDetails = await contract.hackathons(hackathonId);
-
-        console.log("🔍 Full hackathon details:", {
-          id: hackathonDetails.id?.toString(),
-          startTime: hackathonDetails.startTime?.toString(),
-          endTime: hackathonDetails.endTime?.toString(),
-          prizePool: hackathonDetails.prizePool?.toString(),
-          players: hackathonDetails.players,
-          winner: hackathonDetails.winner,
-          ended: hackathonDetails.ended,
-        });
-
-        if (hackathonDetails && hackathonDetails.prizePool) {
-          const prizePoolInEth = ethers.utils.formatEther(
-            hackathonDetails.prizePool
-          );
-          setPrizePool(prizePoolInEth);
-          console.log(`💰 Prize pool from contract: ${prizePoolInEth} ETH`);
-        } else {
-          console.log("❌ No prize pool found in hackathon struct");
-          setPrizePool("0");
-        }
-      } catch (err) {
-        console.error("🔴 Error fetching hackathon details:", err);
-        const fallbackPrizePool = players.length;
-        setPrizePool(fallbackPrizePool.toString());
-        console.log(`💰 Fallback prize pool: ${fallbackPrizePool} ETH`);
-      }
-
-      setParticipants(players);
-    } catch (err) {
-      console.error("🔴 Blockchain fetch failed:", err);
-      setError("Failed to fetch blockchain data.");
-    }
-  };
-
-  // Blockchain data fetching - only if hackathon is active
   useEffect(() => {
-    if (!isHackathonActive) {
-      return;
-    }
+    if (!isHackathonActive) return;
+    const fetchOnChainData = async () => {
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = await getArenaContract();
+        let hackathonId = currentHackathonId;
+
+        if (hackathonId === null) {
+          const counter = await contract.hackathonCounter();
+          hackathonId = counter.toNumber();
+          setCurrentHackathonId(hackathonId);
+        }
+
+        const players = await contract.getPlayers(hackathonId);
+        const hackathonDetails = await contract.hackathons(hackathonId);
+        const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+
+        setParticipants(players);
+        setPrizePool(prizePoolInEth);
+      } catch (err) {
+        console.error("🔴 Blockchain fetch failed:", err);
+        setError("Failed to fetch blockchain data.");
+      }
+    };
 
     fetchOnChainData();
     const interval = setInterval(fetchOnChainData, 15000);
     return () => clearInterval(interval);
   }, [isHackathonActive, currentHackathonId]);
 
-  // SIMPLIFIED UPLOAD MODEL PAYMENT FUNCTION
-  const handleUploadModelPayment = async () => {
-    if (!isHackathonActive) {
-      return;
-    }
+  useEffect(() => {
+    const loadChartData = async () => {
+      try {
+        Papa.parse(csvDataUrl, {
+          download: true,
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const parsedData = results.data
+              .filter((row) => row.timestamp && row.close)
+              .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            setCsvData(parsedData);
+          },
+        });
 
-    try {
-      setIsUploading(true);
-      setTxError("");
-
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const contract = await getArenaContract(signer);
-
-      console.log(
-        "💰 Sending 1 ETH to contract - will trigger receive() function"
-      );
-
-      const tx = await signer.sendTransaction({
-        to: contract.address,
-        value: ethers.utils.parseEther("1.0"),
-        gasLimit: 100000,
-      });
-
-      console.log("📤 Transaction sent:", tx.hash);
-
-      const receipt = await tx.wait();
-      console.log("✅ Transaction confirmed:", receipt);
-
-      setTimeout(() => {
-        console.log("🔄 Refreshing blockchain data...");
-        fetchOnChainData();
-      }, 3000);
-
-      navigate("/UploadModel");
-    } catch (err) {
-      console.error("🔴 Payment failed:", err);
-      if (err.message.includes("user rejected")) {
-        setTxError("Transaction was rejected by user.");
-      } else if (err.message.includes("insufficient funds")) {
-        setTxError("Insufficient funds to upload model.");
-      } else {
-        setTxError(`Failed to process payment: ${err.message}`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prediction/leaderboard/`);
+        const data = await response.json();
+        setLeaderboard(data.leaderboard || []);
+      } catch (err) {
+        console.error("Chart data loading error:", err);
       }
-    } finally {
-      setIsUploading(false);
-    }
-  };
+    };
 
-  // Get Predictions - only if hackathon is active
+    loadChartData();
+  }, []);
+
   const handleGetPredictions = async () => {
-    if (!isHackathonActive) {
-      return;
-    }
-
+    if (!isHackathonActive) return;
     setIsRunningPredictions(true);
     setError("");
     try {
       const access = localStorage.getItem("access");
       const predRes = await axios.post(
-        "http://localhost:8000/prediction/run-prediction/",
+        `${import.meta.env.VITE_API_BASE_URL}/prediction/run-prediction/`,
         {},
         { headers: { Authorization: `Bearer ${access}` } }
       );
@@ -483,6 +408,8 @@ const Home = () => {
       setIsRunningPredictions(false);
     }
   };
+
+
 
   // Loading state
   if (loading) {
@@ -584,7 +511,7 @@ const Home = () => {
 
       <div className="text-center mb-12">
         <button
-          onClick={handleUploadModelPayment}
+          onClick={navigateModelUpload}
           disabled={isUploading}
           className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg mr-4 shadow-md transition"
         >
@@ -673,9 +600,20 @@ const Home = () => {
           </div>
         )}
       </div>
-
-
+      {/*
+      <div className="mt-10 p-6 bg-purple-950 bg-opacity-30 rounded-xl text-sm text-purple-200">
+        <h4 className="font-semibold mb-2">Debug Info:</h4>
+        <p>Current Hackathon ID: {currentHackathonId}</p>
+        <p>Hackathon Status: {hackathonStatus}</p>
+        <p>Is Active: {isHackathonActive.toString()}</p>
+        <p>Prize Pool: {prizePool} ETH</p>
+        <p>Participants: {participants.length}</p>
+        <p>CSV Data Points: {csvData.length}</p>
+        <p>Leaderboard Entries: {leaderboard.length}</p>
+      </div>
+      */}
     </div>
+    
   );
 };
 
