@@ -48,33 +48,6 @@
 
 ---
 
-## 📂 Project Structure
-
-```
-ModelArena/
-├── blockchain/               # Smart contracts
-│   ├── contracts/
-│   │   ├── Arena.sol
-│   │   ├── Staking.sol
-│   │   └── ModelArenaToken.sol
-│   ├── scripts/
-│   │   └── deploy.cjs
-│   └── test/
-│       ├── Arena.test.js
-│       └── Staking.test.js
-│
-├── backend/                 # Django backend
-│   ├── arenaapi/
-│   └── models/, views/, urls/
-│
-├── frontend/                # React frontend
-│   └── src/
-│       └── components/, pages/, services/
-└── README.md
-```
-
----
-
 ## 🏒 Deployment Steps
 
 ### 🔧 Smart Contracts (Hardhat)
