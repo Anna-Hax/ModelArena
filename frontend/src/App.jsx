@@ -10,7 +10,7 @@ import SendEtherPage from "./pages/walletinfo";
 import HackathonInfo from "./pages/HackathonInfo(blockchain)";
 import JoinHackathon from "./pages/HackathonInfo(blockchain)";
 import MLModelsBattle from "./pages/landingPage";
-import RequireAuth from "./context/AuthContext.jsx";  // ✅ Correct import path
+import RequireAuth from "./context/AuthContext.jsx";  
 import { WalletProvider } from "./context/WalletContext";
 import StockChart from "./components/StockChart.jsx";
 import './App.css';

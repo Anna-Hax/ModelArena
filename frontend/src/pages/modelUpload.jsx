@@ -16,8 +16,19 @@ const ModelUpload = () => {
       return;
     }
 
+    const hackathonId = localStorage.getItem("current_hackathon_id"); 
+    console.log("Hackathon ID from localStorage:", localStorage.getItem("current_hackathon_id"));
+
+    if (!hackathonId) {
+      alert("No active hackathon ID found.");
+      return;
+    }
+     
+    console.log("Uploading with hackathon ID:", hackathonId);
+
     const formData = new FormData();
     formData.append("model", file);
+    formData.append("hackathon", hackathonId); 
 
     try {
       const response = await fetch("http://localhost:8000/model/", {
@@ -42,6 +53,7 @@ const ModelUpload = () => {
     }
   };
 
+
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-[#1e003e] via-[#2d005f] to-[#44007e] flex flex-col items-center justify-center text-white px-6">
 
@@ -58,7 +70,7 @@ const ModelUpload = () => {
         <p className="ml-4">├── <span className="text-white">train.py</span> <span className="text-gray-400"># Training logic</span></p>
         <p className="ml-4">├── <span className="text-white">model.py</span> <span className="text-gray-400"># Prediction class</span></p>
         <p className="ml-4">└── <span className="text-white">requirements.txt</span> <span className="text-gray-400"># Dependencies</span></p>
-        <p className="ml-4">└── <span className="text-white">model.pkl</span> <span className="text-gray-400"># Dependencies</span></p>        
+        <p className="ml-4">└── <span className="text-white">model.pkl</span> <span className="text-gray-400"># Dependencies</span></p>
       </div>
 
       {/* File Input */}

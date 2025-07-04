@@ -84,10 +84,10 @@ const Home = () => {
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false
     });
   };
 
@@ -96,8 +96,8 @@ const Home = () => {
     if (csvData.length === 0) return null;
 
     // Find matching leaderboard entry for this model
-    const leaderboardEntry = leaderboard.find(entry => 
-      entry.uploaded_by === model.uploaded_by || 
+    const leaderboardEntry = leaderboard.find(entry =>
+      entry.uploaded_by === model.uploaded_by ||
       entry.model_file === model.model_file
     );
 
@@ -151,7 +151,7 @@ const Home = () => {
         title: {
           display: true,
           text: `📈 ${model.uploaded_by}'s Model (Error: ${(avgError * 100).toFixed(2)}%)`,
-          font: { 
+          font: {
             size: 16,
             weight: 'bold'
           },
@@ -223,7 +223,7 @@ const Home = () => {
               size: 10
             },
             stepSize: 0.5,
-            callback: function(value) {
+            callback: function (value) {
               return '₹' + value.toFixed(2);
             }
           },
@@ -327,6 +327,7 @@ const Home = () => {
   // CORRECTED BLOCKCHAIN DATA FETCHING
   const fetchOnChainData = async () => {
     try {
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = await getArenaContract();
 
@@ -353,6 +354,9 @@ const Home = () => {
       }
 
       setCurrentHackathonId(hackathonId);
+      localStorage.setItem("current_hackathon_id", hackathonId);
+
+      console.log("Hackathon ID from localStorage:", localStorage.getItem("current_hackathon_id"));
 
       const players = await contract.getPlayers(hackathonId);
       console.log(`👥 Players in hackathon ${hackathonId}:`, players);
@@ -438,27 +442,41 @@ const Home = () => {
 
   // SIMPLIFIED UPLOAD MODEL PAYMENT FUNCTION
   const handleUploadModelPayment = async () => {
-    if (!isHackathonActive) {
-      return;
-    }
+    if (!isHackathonActive) return;
 
     try {
+      if (!window.ethereum) {
+        alert("🦊 Please install MetaMask!");
+        return;
+      }
+
       setIsUploading(true);
       setTxError("");
+
+      await window.ethereum.request({ method: "eth_requestAccounts" });
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const contract = await getArenaContract(signer);
 
-      console.log(
-        "💰 Sending 1 ETH to contract - will trigger receive() function"
-      );
+      console.log("💰 Sending 1 ETH to contract");
 
-      const tx = await signer.sendTransaction({
-        to: contract.address,
-        value: ethers.utils.parseEther("1.0"),
-        gasLimit: 100000,
-      });
+      let tx;
+      try {
+        console.log("🔍 Contract object:", contract);
+        console.log("📬 Contract address:", contract?.address);
+        tx = await signer.sendTransaction({
+          to: contract.address,
+          value: ethers.utils.parseEther("1.0"),
+          gasLimit: 100000,
+        });
+        console.log("📤 Transaction sent:", tx.hash);
+      } catch (sendErr) {
+        console.error("❌ Failed to send transaction:", sendErr);
+        alert(`Transaction Error: ${sendErr.message}`);
+        setIsUploading(false);
+        return;
+      }
 
       console.log("📤 Transaction sent:", tx.hash);
 
@@ -471,19 +489,24 @@ const Home = () => {
       }, 3000);
 
       navigate("/UploadModel");
+
     } catch (err) {
       console.error("🔴 Payment failed:", err);
       if (err.message.includes("user rejected")) {
-        setTxError("Transaction was rejected by user.");
+        setTxError("❌ Transaction was rejected.");
       } else if (err.message.includes("insufficient funds")) {
-        setTxError("Insufficient funds to upload model.");
+        setTxError("❌ Insufficient funds in wallet.");
+      } else if (err.message.includes("network") || err.code === "NETWORK_ERROR") {
+        setTxError("❌ Network error. Check your connection.");
       } else {
-        setTxError(`Failed to process payment: ${err.message}`);
+        setTxError(`❌ Error: ${err.message}`);
       }
+      alert(`Upload failed: ${err.message}`);
     } finally {
       setIsUploading(false);
     }
   };
+
 
   // Get Predictions - only if hackathon is active
   const handleGetPredictions = async () => {
@@ -513,6 +536,34 @@ const Home = () => {
       setIsRunningPredictions(false);
     }
   };
+
+  useEffect(() => {
+  if (!showPredictions || !predictionStartTime) return;
+
+  const access = localStorage.getItem("access");
+
+  const interval = setInterval(async () => {
+    try {
+      const res = await axios.post(
+        "http://localhost:8000/prediction/run-prediction/",
+        { only_model_info: false },
+        {
+          headers: {
+            Authorization: `Bearer ${access}`,
+          },
+        }
+      );
+      console.log(" Refreshed models:", res.data.results);
+
+      setModels(res.data.results); 
+    } catch (err) {
+      console.error("🔁 Failed to refresh prediction results:", err);
+    }
+  }, 10000); 
+
+  return () => clearInterval(interval); // Cleanup when unmount or deps change
+}, [showPredictions, predictionStartTime]);
+
 
   // Loading state
   if (loading) {
@@ -677,7 +728,7 @@ const Home = () => {
                           prediction={model.predictions["+5min"]}
                           actual={model.actual_5}
                           baseTime={predictionStartTime}
-                          delayMinutes={5}
+                          delayMinutes={1}
                         />
                         <CountdownTimer
                           key={`10min-${renderKey}-${index}`}
@@ -685,7 +736,7 @@ const Home = () => {
                           prediction={model.predictions["+10min"]}
                           actual={model.actual_10}
                           baseTime={predictionStartTime}
-                          delayMinutes={10}
+                          delayMinutes={1.5}
                         />
                         <CountdownTimer
                           key={`15min-${renderKey}-${index}`}
@@ -693,7 +744,7 @@ const Home = () => {
                           prediction={model.predictions["+15min"]}
                           actual={model.actual_15}
                           baseTime={predictionStartTime}
-                          delayMinutes={15}
+                          delayMinutes={2}
                         />
                       </div>
                     </div>
