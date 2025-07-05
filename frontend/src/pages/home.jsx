@@ -41,10 +41,167 @@ const Home = () => {
   const csvDataUrl = `${import.meta.env.VITE_API_BASE_URL}/uploads/input_data_d.csv`;
 
   const navigate = useNavigate();
-    // Load CSV data and leaderboard
+
+  // Debug state changes
+  useEffect(() => {
+    console.log("🔍 State Debug:", {
+      loading,
+      hackathonStatus,
+      isHackathonActive,
+      currentHackathonId,
+      error,
+      modelsCount: models.length,
+      participantsCount: participants.length
+    });
+  }, [loading, hackathonStatus, isHackathonActive, currentHackathonId, error, models.length, participants.length]);
+
+  // Emergency loading timeout
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn("⚠️ Loading timeout - forcing loading to false");
+        setLoading(false);
+        setError("Loading timeout - please refresh the page");
+      }
+    }, 15000); // 15 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  // 1. First useEffect - Handle hackathon status
+  useEffect(() => {
+    const fetchHackathonStatus = async () => {
+      try {
+        console.log("🔄 Fetching hackathon status...");
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/hackathon/status/`);
+        
+        console.log("✅ Hackathon status response:", response.data);
+        
+        if (response.data.status === "ongoing") {
+          setHackathonStatus("ongoing");
+          setHackathonTitle(response.data.title);
+          setIsHackathonActive(true);
+          
+          if (response.data.hackathon_id) {
+            setCurrentHackathonId(response.data.hackathon_id);
+          }
+          
+          console.log("✅ Active hackathon found:", {
+            title: response.data.title,
+            hackathon_id: response.data.hackathon_id,
+            django_id: response.data.django_id
+          });
+          
+        } else if (response.data.status === "ended") {
+          setHackathonStatus("ended");
+          setHackathonTitle(response.data.title || "Hackathon");
+          setIsHackathonActive(false);
+          
+        } else if (response.data.status === "upcoming") {
+          setHackathonStatus("upcoming");
+          setHackathonTitle(response.data.title || "Hackathon");
+          setIsHackathonActive(false);
+          
+        } else {
+          setHackathonStatus("not_found");
+          setIsHackathonActive(false);
+        }
+        
+        // IMPORTANT: Set loading to false after processing status
+        setLoading(false);
+        
+      } catch (err) {
+        console.error("🔴 Failed to fetch hackathon status:", err);
+        setError("Failed to fetch hackathon status.");
+        setHackathonStatus("not_found");
+        setIsHackathonActive(false);
+        setLoading(false); // Set loading to false even on error
+      }
+    };
+
+    fetchHackathonStatus();
+    const interval = setInterval(fetchHackathonStatus, 30000);
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array
+
+  // 2. Second useEffect - Handle initial data fetching (only when hackathon is active)
+  useEffect(() => {
+    if (!isHackathonActive) {
+      console.log("❌ No active hackathon, skipping model fetch");
+      return;
+    }
+
+    const fetchInitialData = async () => {
+      try {
+        console.log("🔄 Fetching initial model data...");
+        const access = localStorage.getItem("access");
+        const modelsRes = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/prediction/run-prediction/`,
+          { only_model_info: true },
+          { headers: { Authorization: `Bearer ${access}` } }
+        );
+
+        const basicModels = modelsRes.data.results.map((model) => ({
+          uploaded_by: model.uploaded_by,
+          model_file: model.model_file,
+          reward_token: model.reward_token || 0,
+        }));
+
+        setModels(basicModels);
+        console.log("✅ Models loaded:", basicModels.length);
+        
+      } catch (err) {
+        console.error("🔴 Initial data fetch failed:", err);
+        setError("Failed to fetch model list.");
+      }
+    };
+
+    fetchInitialData();
+  }, [isHackathonActive]); // Only depend on isHackathonActive
+
+  // 3. Third useEffect - Handle blockchain data (only when hackathon is active and we have ID)
+  useEffect(() => {
+    if (!isHackathonActive || currentHackathonId === null) {
+      console.log("❌ Skipping blockchain fetch - hackathon not active or no ID");
+      return;
+    }
+    
+    const fetchOnChainData = async () => {
+      try {
+        console.log("🔗 Fetching blockchain data for hackathon ID:", currentHackathonId);
+        
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = await getArenaContract();
+        
+        const players = await contract.getPlayers(currentHackathonId);
+        const hackathonDetails = await contract.hackathons(currentHackathonId);
+        const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+
+        setParticipants(players);
+        setPrizePool(prizePoolInEth);
+        
+        console.log("✅ Blockchain data fetched successfully:", {
+          participants: players.length,
+          prizePool: prizePoolInEth
+        });
+        
+      } catch (err) {
+        console.error("🔴 Blockchain fetch failed:", err);
+        setError("Failed to fetch blockchain data. Make sure the hackathon exists on the blockchain.");
+      }
+    };
+
+    fetchOnChainData();
+    const interval = setInterval(fetchOnChainData, 15000);
+    return () => clearInterval(interval);
+  }, [isHackathonActive, currentHackathonId]); // Depend on both values
+
+  // 4. Fourth useEffect - Load CSV data (independent of hackathon status)
   useEffect(() => {
     const loadChartData = async () => {
       try {
+        console.log("🔄 Loading CSV data...");
+        
         // Load CSV from backend
         Papa.parse(csvDataUrl, {
           download: true,
@@ -56,22 +213,27 @@ const Home = () => {
               .filter(row => row.timestamp && row.close)
               .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             setCsvData(parsedData);
-            // Update render key when new CSV data is loaded
             setRenderKey(Date.now());
+            console.log("✅ CSV data loaded:", parsedData.length, "rows");
           },
+          error: (error) => {
+            console.error("🔴 CSV parsing error:", error);
+          }
         });
 
         // Fetch leaderboard data
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prediction/leaderboard/`);
         const data = await response.json();
         setLeaderboard(data.leaderboard || []);
+        console.log("✅ Leaderboard loaded:", data.leaderboard?.length || 0, "entries");
+        
       } catch (err) {
-        console.error("Chart data loading error:", err);
+        console.error("🔴 Chart data loading error:", err);
       }
     };
 
     loadChartData();
-  }, []);
+  }, []); // Load once on mount
 
   // Generate predicted prices for charts
   const generatePredictedPrices = (actualPrices, avgError) => {
@@ -264,130 +426,6 @@ const Home = () => {
     navigate("/UploadModel");
   };
 
-  useEffect(() => {
-    const fetchHackathonStatus = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/hackathon/status/`);
-        if (response.data.status === "ongoing") {
-          setHackathonStatus("ongoing");
-          setHackathonTitle(response.data.title);
-          setIsHackathonActive(true);
-          if (response.data.hackathon_id) {
-            setCurrentHackathonId(response.data.hackathon_id);
-          }
-        } else if (response.data.status === "ended") {
-          setHackathonStatus("ended");
-          setHackathonTitle(response.data.title || "Hackathon");
-          setIsHackathonActive(false);
-        } else {
-          setHackathonStatus("not_found");
-          setIsHackathonActive(false);
-        }
-      } catch (err) {
-        console.error("🔴 Failed to fetch hackathon status:", err);
-        setError("Failed to fetch hackathon status.");
-        setHackathonStatus("not_found");
-        setIsHackathonActive(false);
-      }
-    };
-
-    fetchHackathonStatus();
-    const interval = setInterval(fetchHackathonStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const access = localStorage.getItem("access");
-        const modelsRes = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/prediction/run-prediction/`,
-          { only_model_info: true },
-          { headers: { Authorization: `Bearer ${access}` } }
-        );
-
-        const basicModels = modelsRes.data.results.map((model) => ({
-          uploaded_by: model.uploaded_by,
-          model_file: model.model_file,
-          reward_token: model.reward_token || 0,
-        }));
-
-        setModels(basicModels);
-      } catch (err) {
-        console.error("🔴 Initial data fetch failed:", err);
-        setError("Failed to fetch model list.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (isHackathonActive) {
-      fetchInitialData();
-    } else {
-      setLoading(false);
-    }
-  }, [isHackathonActive]);
-
-  useEffect(() => {
-    if (!isHackathonActive) return;
-    const fetchOnChainData = async () => {
-      try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const contract = await getArenaContract();
-        let hackathonId = currentHackathonId;
-
-        if (hackathonId === null) {
-          const counter = await contract.hackathonCounter();
-          hackathonId = counter.toNumber();
-          setCurrentHackathonId(hackathonId);
-        }
-
-        const players = await contract.getPlayers(hackathonId);
-        const hackathonDetails = await contract.hackathons(hackathonId);
-        const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
-
-        setParticipants(players);
-        setPrizePool(prizePoolInEth);
-      } catch (err) {
-        console.error("🔴 Blockchain fetch failed:", err);
-        setError("Failed to fetch blockchain data.");
-      }
-    };
-
-    fetchOnChainData();
-    const interval = setInterval(fetchOnChainData, 15000);
-    return () => clearInterval(interval);
-  }, [isHackathonActive, currentHackathonId]);
-
-  useEffect(() => {
-    const loadChartData = async () => {
-      try {
-        Papa.parse(csvDataUrl, {
-          download: true,
-          header: true,
-          dynamicTyping: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            const parsedData = results.data
-              .filter((row) => row.timestamp && row.close)
-              .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            setCsvData(parsedData);
-            // Update render key when new CSV data is loaded
-            setRenderKey(Date.now());
-          },
-        });
-
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prediction/leaderboard/`);
-        const data = await response.json();
-        setLeaderboard(data.leaderboard || []);
-      } catch (err) {
-        console.error("Chart data loading error:", err);
-      }
-    };
-
-    loadChartData();
-  }, []);
-
   const handleGetPredictions = async () => {
     if (!isHackathonActive) return;
     setIsRunningPredictions(true);
@@ -413,13 +451,22 @@ const Home = () => {
     }
   };
 
-  // Loading state
+  // Enhanced loading state with debug info
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>⏳ Loading hackathon data...</p>
+      <div className="flex justify-center items-center h-screen bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050]">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-6"></div>
+          <p className="text-xl mb-2">⏳ Loading hackathon data...</p>
+          <p className="text-sm text-purple-200">
+            Status: {hackathonStatus || 'Checking...'}
+          </p>
+          <p className="text-sm text-purple-200">
+            Active: {isHackathonActive ? 'Yes' : 'No'}
+          </p>
+          <p className="text-sm text-purple-200">
+            ID: {currentHackathonId || 'Not set'}
+          </p>
         </div>
       </div>
     );
@@ -428,30 +475,51 @@ const Home = () => {
   // Error state
   if (error) {
     return (
-      <div className="text-center py-8">
-        <div className="text-red-600 text-lg mb-4">❌ {error}</div>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Retry
-        </button>
+      <div className="text-center py-8 bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] min-h-screen flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="text-red-400 text-lg mb-4">❌ {error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
-  // No active hackathon state
+  // Upcoming hackathon state
+  if (hackathonStatus === "upcoming") {
+    return (
+      <div className="home-container max-w-4xl mx-auto p-6 text-center min-h-screen bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] flex items-center justify-center">
+        <div className="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-8 text-white">
+          <h2 className="text-3xl font-bold text-blue-200 mb-4">
+            ⏳ Hackathon Starting Soon
+          </h2>
+          <p className="text-xl text-blue-100 mb-4">
+            The hackathon "{hackathonTitle}" will start soon.
+          </p>
+          <p className="text-blue-200">
+            Please check back when the hackathon begins.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ended hackathon state
   if (hackathonStatus === "ended") {
     return (
-      <div className="home-container max-w-4xl mx-auto p-6 text-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-8">
-          <h2 className="text-3xl font-bold text-red-800 mb-4">
+      <div className="home-container max-w-4xl mx-auto p-6 text-center min-h-screen bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] flex items-center justify-center">
+        <div className="bg-red-900 bg-opacity-30 border border-red-500 rounded-lg p-8 text-white">
+          <h2 className="text-3xl font-bold text-red-200 mb-4">
             🏁 Hackathon Ended
           </h2>
-          <p className="text-xl text-red-700 mb-4">
+          <p className="text-xl text-red-100 mb-4">
             The hackathon "{hackathonTitle}" has ended.
           </p>
-          <p className="text-gray-600">
+          <p className="text-red-200">
             Please wait for the next hackathon to be announced.
           </p>
         </div>
@@ -459,17 +527,18 @@ const Home = () => {
     );
   }
 
+  // No active hackathon state
   if (hackathonStatus === "not_found" || !isHackathonActive) {
     return (
-      <div className="home-container max-w-4xl mx-auto p-6 text-center">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8">
-          <h2 className="text-3xl font-bold text-yellow-800 mb-4">
+      <div className="home-container max-w-4xl mx-auto p-6 text-center min-h-screen bg-gradient-to-b from-[#28014e] via-[#72119f] to-[#240050] flex items-center justify-center">
+        <div className="bg-yellow-900 bg-opacity-30 border border-yellow-500 rounded-lg p-8 text-white">
+          <h2 className="text-3xl font-bold text-yellow-200 mb-4">
             ⏳ No Active Hackathon
           </h2>
-          <p className="text-xl text-yellow-700 mb-4">
+          <p className="text-xl text-yellow-100 mb-4">
             There is no active hackathon running at the moment.
           </p>
-          <p className="text-gray-600">
+          <p className="text-yellow-200">
             Please check back later or contact the organizers.
           </p>
         </div>
@@ -602,7 +671,7 @@ const Home = () => {
           </div>
         )}
       </div>
-      {/*
+
       <div className="mt-10 p-6 bg-purple-950 bg-opacity-30 rounded-xl text-sm text-purple-200">
         <h4 className="font-semibold mb-2">Debug Info:</h4>
         <p>Current Hackathon ID: {currentHackathonId}</p>
@@ -613,9 +682,7 @@ const Home = () => {
         <p>CSV Data Points: {csvData.length}</p>
         <p>Leaderboard Entries: {leaderboard.length}</p>
       </div>
-      */}
     </div>
-    
   );
 };
 
