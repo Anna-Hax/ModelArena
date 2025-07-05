@@ -15,6 +15,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
 
 
+
 # Blockchain settings
 # ✅ Correct Timezone settings
 TIME_ZONE = "Asia/Kolkata"
@@ -66,6 +67,22 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # React frontend origin
     "https://modelarena.onrender.com"
 ]
+# ✅ Trust your frontend domain for CSRF
+CSRF_TRUSTED_ORIGINS = [
+    "https://modelarena.onrender.com"
+]
+
+# ✅ Allow cross-origin cookies and CSRF
+CORS_ALLOW_CREDENTIALS = True
+
+# ✅ Required for CSRF + Session over HTTPS
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+# ✅ Allow CSRF cookie to be sent cross-site (only with HTTPS)
+CSRF_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SAMESITE = "None"
+
 
 TEMPLATES = [
     {
