@@ -11,6 +11,7 @@ import HackathonInfo from "./pages/HackathonInfo(blockchain)";
 import JoinHackathon from "./pages/HackathonInfo(blockchain)";
 import MLModelsBattle from "./pages/landingPage";
 import RequireAuth from "./context/AuthContext.jsx";  // ✅ Correct import path
+import CreateHackathon from "./pages/createHackathon"
 import { WalletProvider } from "./context/WalletContext";
 import StockChart from "./components/StockChart.jsx";
 import './App.css';
@@ -27,6 +28,7 @@ const App = () => {
 
           {/* Protected Routes */}
           <Route element={<RequireAuth />}>
+            <Route path='/create' element={<CreateHackathon/>}/>
             <Route path="/UploadModel" element={<ModelUpload />} />
             <Route path="/home" element={<Home />} />
             <Route path="/landing" element={<Hackathonlanding />} />

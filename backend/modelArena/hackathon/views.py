@@ -2,6 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import HackathonConfig
+from rest_framework import generics
+from .serializers import HackathonConfigSerializer
+
 
 class HackathonStatusView(APIView):
     def get(self, request):
@@ -36,3 +39,8 @@ class HackathonStatusView(APIView):
 
         except HackathonConfig.DoesNotExist:
             return Response({"status": "no_hackathon_scheduled"}, status=404)
+        
+
+class HackathonCreateView(generics.CreateAPIView):
+    queryset = HackathonConfig.objects.all()
+    serializer_class = HackathonConfigSerializer
