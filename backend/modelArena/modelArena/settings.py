@@ -64,6 +64,7 @@ ROOT_URLCONF = 'modelArena.urls'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # React frontend origin
+    "https://modelarena.onrender.com"
 ]
 
 TEMPLATES = [
