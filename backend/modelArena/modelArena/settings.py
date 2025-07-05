@@ -65,7 +65,8 @@ ROOT_URLCONF = 'modelArena.urls'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # React frontend origin
-    "https://modelarena.onrender.com"
+    "https://modelarena.onrender.com",
+    "https://aiblock1234.onrender.com"
 ]
 # ✅ Trust your frontend domain for CSRF
 CSRF_TRUSTED_ORIGINS = [
