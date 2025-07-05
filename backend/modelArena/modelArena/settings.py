@@ -2,12 +2,17 @@ from datetime import timedelta
 from pathlib import Path
 import os
 
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
 
 SECRET_KEY = 'django-insecure-ii&i)f&b7)wka#-1r4wp1@5s(d!w-)t$)j4&73fb)m0ba$w$v$'
 DEBUG = True
 ALLOWED_HOSTS = []
 
+# Blockchain settings
 # ✅ Correct Timezone settings
 TIME_ZONE = "Asia/Kolkata"
 USE_TZ = True
@@ -15,6 +20,7 @@ USE_TZ = True
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',

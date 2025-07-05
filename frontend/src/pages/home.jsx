@@ -3,7 +3,7 @@ import axios from "axios";
 import { ethers } from "ethers";
 import { getArenaContract } from "../utils/contract";
 import CountdownTimer from "../components/Counter";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Papa from "papaparse";
 import { Line } from "react-chartjs-2";
 import {
@@ -16,6 +16,7 @@ import {
   Tooltip,
   Title,
 } from "chart.js";
+
 
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Legend, Tooltip, Title);
 
@@ -41,6 +42,7 @@ const Home = () => {
   const csvDataUrl = `${import.meta.env.VITE_API_BASE_URL}/uploads/input_data_d.csv`;
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Debug state changes
   useEffect(() => {
@@ -159,7 +161,7 @@ const Home = () => {
     fetchInitialData();
   }, [isHackathonActive]); // Only depend on isHackathonActive
 
-  // 3. Third useEffect - Handle blockchain data (only when hackathon is active and we have ID)
+  // 3. Third useEffect - Handle blockchain data (IMPROVED with shorter interval)
   useEffect(() => {
     if (!isHackathonActive || currentHackathonId === null) {
       console.log("❌ Skipping blockchain fetch - hackathon not active or no ID");
@@ -192,7 +194,9 @@ const Home = () => {
     };
 
     fetchOnChainData();
-    const interval = setInterval(fetchOnChainData, 15000);
+    
+    // Use a shorter interval for more frequent updates
+    const interval = setInterval(fetchOnChainData, 10000); // Check every 10 seconds instead of 15
     return () => clearInterval(interval);
   }, [isHackathonActive, currentHackathonId]); // Depend on both values
 
@@ -234,6 +238,44 @@ const Home = () => {
 
     loadChartData();
   }, []); // Load once on mount
+
+  // 5. Fifth useEffect - Handle forced refresh from navigation (NEW)
+  useEffect(() => {
+    if (location.state?.forceRefresh && isHackathonActive && currentHackathonId !== null) {
+      console.log("🔄 Force refresh triggered from navigation");
+      
+      // Clear the navigation state to prevent repeated refreshes
+      navigate(location.pathname, { replace: true, state: {} });
+      
+      // Force refresh blockchain data after a short delay
+      const forceRefreshBlockchain = async () => {
+        try {
+          console.log("🔄 Force refreshing blockchain data...");
+          
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const contract = await getArenaContract();
+          
+          const players = await contract.getPlayers(currentHackathonId);
+          const hackathonDetails = await contract.hackathons(currentHackathonId);
+          const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+
+          setParticipants(players);
+          setPrizePool(prizePoolInEth);
+          
+          console.log("✅ Forced blockchain refresh completed:", {
+            participants: players.length,
+            prizePool: prizePoolInEth
+          });
+          
+        } catch (err) {
+          console.error("🔴 Force refresh failed:", err);
+        }
+      };
+      
+      // Add a small delay to ensure blockchain state is fully updated
+      setTimeout(forceRefreshBlockchain, 2000);
+    }
+  }, [location, isHackathonActive, currentHackathonId, navigate]);
 
   // Generate predicted prices for charts
   const generatePredictedPrices = (actualPrices, avgError) => {
@@ -670,17 +712,6 @@ const Home = () => {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="mt-10 p-6 bg-purple-950 bg-opacity-30 rounded-xl text-sm text-purple-200">
-        <h4 className="font-semibold mb-2">Debug Info:</h4>
-        <p>Current Hackathon ID: {currentHackathonId}</p>
-        <p>Hackathon Status: {hackathonStatus}</p>
-        <p>Is Active: {isHackathonActive.toString()}</p>
-        <p>Prize Pool: {prizePool} ETH</p>
-        <p>Participants: {participants.length}</p>
-        <p>CSV Data Points: {csvData.length}</p>
-        <p>Leaderboard Entries: {leaderboard.length}</p>
       </div>
     </div>
   );
