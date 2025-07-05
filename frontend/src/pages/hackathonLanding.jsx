@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import * as ethers from "ethers";
+import ArenaABI from "../contracts/Arena.json"; // ✅ import ABI
 import axios from "axios";
 
 import { getArenaContract } from "../utils/contract";
@@ -44,15 +45,17 @@ const FancyHackathonLanding = () => {
     const fetchHackathonStatus = async () => {
       try {
         console.log("🔄 Fetching hackathon status from Django...");
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/hackathon/status/`);
-        
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/hackathon/status/`
+        );
+
         console.log("✅ Hackathon status response:", response.data);
-        
+
         if (response.data.status === "ongoing") {
           setHackathonStatus("ongoing");
           setStatus("ongoing");
           setIsHackathonActive(true);
-          
+
           // Set the hackathon data
           const mockHackathon = {
             id: response.data.hackathon_id || response.data.django_id,
@@ -60,26 +63,32 @@ const FancyHackathonLanding = () => {
             status: "ongoing",
             time_remaining: response.data.time_remaining || 3661,
             duration_minutes: response.data.duration_minutes || 120,
-            hackathon_dataset_url: response.data.hackathon_dataset_url || "https://example.com/dataset.zip",
+            hackathon_dataset_url:
+              response.data.hackathon_dataset_url ||
+              "https://example.com/dataset.zip",
             prize_pool: "50 ETH",
             participants: 127,
-            description: response.data.description || "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
+            description:
+              response.data.description ||
+              "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
           };
-          
+
           setHackathon(mockHackathon);
           setTimer(response.data.time_remaining || 3661);
-          
+
           // Set the current hackathon ID from Django response
           if (response.data.hackathon_id) {
             setCurrentHackathonId(response.data.hackathon_id);
-            console.log("✅ Set hackathon ID from Django:", response.data.hackathon_id);
+            console.log(
+              "✅ Set hackathon ID from Django:",
+              response.data.hackathon_id
+            );
           }
-          
         } else if (response.data.status === "ended") {
           setHackathonStatus("ended");
           setStatus("ended");
           setIsHackathonActive(false);
-          
+
           const endedHackathon = {
             id: response.data.hackathon_id || response.data.django_id,
             title: response.data.title || "AI Stock Prediction Challenge 2025",
@@ -89,17 +98,18 @@ const FancyHackathonLanding = () => {
             hackathon_dataset_url: response.data.hackathon_dataset_url,
             prize_pool: "50 ETH",
             participants: 127,
-            description: response.data.description || "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
+            description:
+              response.data.description ||
+              "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
           };
-          
+
           setHackathon(endedHackathon);
           setTimer(0);
-          
         } else if (response.data.status === "upcoming") {
           setHackathonStatus("upcoming");
           setStatus("upcoming");
           setIsHackathonActive(false);
-          
+
           const upcomingHackathon = {
             id: response.data.hackathon_id || response.data.django_id,
             title: response.data.title || "AI Stock Prediction Challenge 2025",
@@ -109,25 +119,25 @@ const FancyHackathonLanding = () => {
             hackathon_dataset_url: response.data.hackathon_dataset_url,
             prize_pool: "50 ETH",
             participants: 127,
-            description: response.data.description || "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
+            description:
+              response.data.description ||
+              "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
           };
-          
+
           setHackathon(upcomingHackathon);
           setTimer(response.data.time_remaining || 3661);
-          
         } else {
           setHackathonStatus("not_found");
           setStatus("not_found");
           setIsHackathonActive(false);
           setError("No hackathon found");
         }
-        
       } catch (err) {
         console.error("🔴 Failed to fetch hackathon status:", err);
         setError("Failed to fetch hackathon status.");
         setHackathonStatus("not_found");
         setIsHackathonActive(false);
-        
+
         // Fallback to mock data if Django fails
         const mockHackathon = {
           id: 1,
@@ -138,7 +148,8 @@ const FancyHackathonLanding = () => {
           hackathon_dataset_url: "https://example.com/dataset.zip",
           prize_pool: "50 ETH",
           participants: 127,
-          description: "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
+          description:
+            "Build the most accurate ML model to predict stock prices in real-time. Compete against the world's best data scientists!",
         };
 
         setHackathon(mockHackathon);
@@ -158,7 +169,7 @@ const FancyHackathonLanding = () => {
       console.log("❌ No active hackathon, skipping blockchain fetch");
       return;
     }
-    
+
     try {
       console.log("🔗 Fetching blockchain data...");
       const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -184,7 +195,9 @@ const FancyHackathonLanding = () => {
         try {
           const hackathonDetails = await contract.hackathons(hackathonId);
           if (hackathonDetails && hackathonDetails.prizePool) {
-            const prizePoolInEth = ethers.utils.formatEther(hackathonDetails.prizePool);
+            const prizePoolInEth = ethers.utils.formatEther(
+              hackathonDetails.prizePool
+            );
             setPrizePool(prizePoolInEth);
             console.log("✅ Prize pool:", prizePoolInEth);
           }
@@ -323,9 +336,16 @@ const FancyHackathonLanding = () => {
       console.log("📦 Joining hackathon with ID:", hackathonId);
 
       // ✅ Send ETH to join hackathon
-      const tx = await contract.joinHackathon(hackathonId, {
-        value: ethers.utils.parseEther("0.0001"), // ✅ Correct usage
-        gasLimit: 150000,
+      // const tx = await contract.joinHackathon(hackathonId, {
+      //   value: ethers.utils.parseEther("0.0001"), // ✅ Correct usage
+      //   gasLimit: 150000,
+      // });
+
+
+      const tx = await signer.sendTransaction({
+        to: contract.address,
+        value: ethers.utils.parseEther("0.0001"), // ETH to stake
+        gasLimit: 150000, // Optional
       });
 
       console.log("📤 Transaction sent:", tx.hash);
@@ -428,7 +448,7 @@ const FancyHackathonLanding = () => {
             Loading hackathon details...
           </div>
           <div className="text-purple-300 text-sm mt-2">
-            Status: {hackathonStatus || 'Checking...'}
+            Status: {hackathonStatus || "Checking..."}
           </div>
         </div>
       </div>
@@ -486,7 +506,9 @@ const FancyHackathonLanding = () => {
               <div className="flex items-center space-x-2">
                 <Trophy className="w-5 h-5 text-yellow-400" />
                 <div>
-                  <div className="text-2xl font-bold text-green-400">{prizePool} ETH</div>
+                  <div className="text-2xl font-bold text-green-400">
+                    {prizePool} ETH
+                  </div>
                   <div className="text-sm text-gray-400">Prize Pool</div>
                 </div>
               </div>
@@ -495,7 +517,9 @@ const FancyHackathonLanding = () => {
               <div className="flex items-center space-x-2">
                 <Users className="w-5 h-5 text-blue-400" />
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{participants.length}</div>
+                  <div className="text-2xl font-bold text-blue-400">
+                    {participants.length}
+                  </div>
                   <div className="text-sm text-gray-400">Participants</div>
                 </div>
               </div>
@@ -504,7 +528,13 @@ const FancyHackathonLanding = () => {
               <div className="flex items-center space-x-2">
                 <Clock className="w-5 h-5 text-purple-400" />
                 <div>
-                  <div className={`text-2xl font-bold ${isLastTen ? 'text-red-400 animate-pulse' : 'text-purple-400'}`}>
+                  <div
+                    className={`text-2xl font-bold ${
+                      isLastTen
+                        ? "text-red-400 animate-pulse"
+                        : "text-purple-400"
+                    }`}
+                  >
                     {formatTime(timer)}
                   </div>
                   <div className="text-sm text-gray-400">Time Left</div>
@@ -513,12 +543,6 @@ const FancyHackathonLanding = () => {
             </div>
           </div>
 
-          {/* Debug Info */}
-          <div className="mb-8 p-4 bg-black/20 rounded-lg text-sm text-gray-400">
-            <div>Django Status: {hackathonStatus}</div>
-            <div>Current Hackathon ID: {currentHackathonId}</div>
-            <div>Is Active: {isHackathonActive.toString()}</div>
-          </div>
         </div>
 
         {/* Features Grid */}
