@@ -29,7 +29,9 @@ class HackathonStatusView(APIView):
                 "hackathon_dataset_url": request.build_absolute_uri(hackathon.dataset.url) if hackathon.dataset else None,
                 "status": status,
                 "time_to_start": time_to_start,
-                "time_remaining": time_remaining
+                "time_remaining": time_remaining,
+                "hackathon_id": hackathon.blockchain_id or hackathon.id,  # Use blockchain_id if available, otherwise use Django primary key
+                "django_id": hackathon.id  # Include Django ID for reference
             })
 
         except HackathonConfig.DoesNotExist:
