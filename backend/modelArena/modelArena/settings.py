@@ -69,7 +69,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # ✅ Trust your frontend domain for CSRF
 CSRF_TRUSTED_ORIGINS = [
-    "https://modelarena.onrender.com"
+    "https://modelarena.onrender.com",
+   "https://aiblock1234.onrender.com"
 ]
 
 # ✅ Allow cross-origin cookies and CSRF
