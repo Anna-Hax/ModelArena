@@ -14,11 +14,13 @@ class HackathonConfig(models.Model):
     )
 
     blockchain_id = models.IntegerField(
-        null=True,
-        blank=True,
-        help_text="ID of this hackathon on the blockchain"
-    )
+    null=True,
+    blank=True,
+    unique=True,  # <-- Add this
+    help_text="ID of this hackathon on the blockchain"
+   )
 
+    fulfilled = models.BooleanField(default=False)
     @property
     def end_time(self):
         return self.start_time + timedelta(minutes=self.duration_minutes)

@@ -29,6 +29,7 @@ class HackathonStatusView(APIView):
                 "hackathon_dataset_url": request.build_absolute_uri(hackathon.dataset.url) if hackathon.dataset else None,
                 "status": status,
                 "time_to_start": time_to_start,
+                "hackathon_id": hackathon.blockchain_id, 
                 "time_remaining": time_remaining
             })
 

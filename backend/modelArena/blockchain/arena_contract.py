@@ -1,8 +1,8 @@
 from web3 import Web3
-from .web3 import web3, account, CHAIN_ID, PUBLIC_ADDRESS
+from .web3 import web3, account, CHAIN_ID, PUBLIC_ADDRESS, CONTRACT_ADDRESS
 from .arena_abi import arena_abi
 
-ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+ARENA_CONTRACT_ADDRESS = Web3.to_checksum_address(CONTRACT_ADDRESS)
 
 contract = web3.eth.contract(address=ARENA_CONTRACT_ADDRESS, abi=arena_abi)
 
@@ -12,6 +12,13 @@ def _send_transaction(tx):
     return web3.to_hex(tx_hash)
 
 def create_hackathon(start_time: int):
+    try:
+        print(" Simulating createHackathon call...")
+        contract.functions.createHackathon(start_time).call({'from': PUBLIC_ADDRESS})
+        print(" Simulated call passed (no revert)")
+    except Exception as e:
+        print(" Simulated call failed — revert reason:", e)
+
     tx = contract.functions.createHackathon(start_time).build_transaction({
         "chainId": CHAIN_ID,
         "from": PUBLIC_ADDRESS,
@@ -19,7 +26,9 @@ def create_hackathon(start_time: int):
         "gas": 300000,
         "gasPrice": web3.eth.gas_price
     })
+
     return _send_transaction(tx)
+
 
 def join_hackathon(hackathon_id: int, amount_in_wei: int):
     tx = contract.functions.joinHackathon(hackathon_id).build_transaction({

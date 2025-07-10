@@ -84,10 +84,10 @@ const Home = () => {
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false
     });
   };
 
@@ -96,8 +96,8 @@ const Home = () => {
     if (csvData.length === 0) return null;
 
     // Find matching leaderboard entry for this model
-    const leaderboardEntry = leaderboard.find(entry => 
-      entry.uploaded_by === model.uploaded_by || 
+    const leaderboardEntry = leaderboard.find(entry =>
+      entry.uploaded_by === model.uploaded_by ||
       entry.model_file === model.model_file
     );
 
@@ -151,7 +151,7 @@ const Home = () => {
         title: {
           display: true,
           text: `📈 ${model.uploaded_by}'s Model (Error: ${(avgError * 100).toFixed(2)}%)`,
-          font: { 
+          font: {
             size: 16,
             weight: 'bold'
           },
@@ -223,7 +223,7 @@ const Home = () => {
               size: 10
             },
             stepSize: 0.5,
-            callback: function(value) {
+            callback: function (value) {
               return '₹' + value.toFixed(2);
             }
           },
@@ -342,7 +342,7 @@ const Home = () => {
       }
 
       console.log(
-        `📊 Fetching blockchain data for hackathon ID: ${hackathonId}`
+        ` Fetching blockchain data for hackathon ID: ${hackathonId}`
       );
 
       if (hackathonId < 0) {
@@ -356,7 +356,7 @@ const Home = () => {
       setCurrentHackathonId(hackathonId);
 
       const players = await contract.getPlayers(hackathonId);
-      console.log(`👥 Players in hackathon ${hackathonId}:`, players);
+      console.log(` Players in hackathon ${hackathonId}:`, players);
 
       try {
         const hackathonDetails = await contract.hackathons(hackathonId);
@@ -408,9 +408,7 @@ const Home = () => {
 
   // SIMPLIFIED UPLOAD MODEL PAYMENT FUNCTION
   const handleUploadModelPayment = async () => {
-    if (!isHackathonActive) {
-      return;
-    }
+    if (!isHackathonActive) return;
 
     try {
       setIsUploading(true);
@@ -420,40 +418,35 @@ const Home = () => {
       const signer = provider.getSigner();
       const contract = await getArenaContract(signer);
 
-      console.log(
-        "💰 Sending 1 ETH to contract - will trigger receive() function"
-      );
+      console.log("📥 Joining hackathon...");
 
-      const tx = await signer.sendTransaction({
-        to: contract.address,
+      const tx = await contract.joinHackathon(currentHackathonId, {
         value: ethers.utils.parseEther("1.0"),
-        gasLimit: 100000,
       });
 
       console.log("📤 Transaction sent:", tx.hash);
-
       const receipt = await tx.wait();
-      console.log("✅ Transaction confirmed:", receipt);
+      console.log("✅ Joined hackathon:", receipt);
 
       setTimeout(() => {
-        console.log("🔄 Refreshing blockchain data...");
-        fetchOnChainData();
+        fetchOnChainData(); // Refresh UI
       }, 3000);
 
       navigate("/UploadModel");
     } catch (err) {
-      console.error("🔴 Payment failed:", err);
+      console.error("🔴 Join failed:", err);
       if (err.message.includes("user rejected")) {
-        setTxError("Transaction was rejected by user.");
+        setTxError("Transaction rejected by user.");
       } else if (err.message.includes("insufficient funds")) {
-        setTxError("Insufficient funds to upload model.");
+        setTxError("Not enough ETH to join.");
       } else {
-        setTxError(`Failed to process payment: ${err.message}`);
+        setTxError(err.message);
       }
     } finally {
       setIsUploading(false);
     }
   };
+
 
   // Get Predictions - only if hackathon is active
   const handleGetPredictions = async () => {
